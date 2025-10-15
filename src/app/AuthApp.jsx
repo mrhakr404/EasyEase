@@ -7,6 +7,8 @@ import {
   initiateEmailSignIn 
 } from '@/firebase/non-blocking-login';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 
 // --- Helper Functions & SVGs ---
 
@@ -299,7 +301,7 @@ const SignUpForm = ({ auth, db, setError }) => {
         setIsLoading(true);
 
         try {
-            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
             // Save user profile to Firestore
@@ -472,5 +474,7 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
 
     
