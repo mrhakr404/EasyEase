@@ -1,0 +1,149 @@
+/**
+ * @fileoverview Firestore Security Rules for EnrollEase.
+ *
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for
+ * user profiles and notes, combined with role-based access for announcements.
+ * Courses have institute-based ownership.
+ *
+ * Data Structure:
+ * - /userProfiles/{userId}: Stores user profile information; accessible only
+ *   to the user themselves.
+ * - /users/{userId}/notes/{noteId}: Stores user notes; accessible only to the
+ *   owning user.
+ * - /courses/{courseId}: Stores course information; accessible for reading
+ *   by anyone, but only writable by the owning institute.
+ * - /announcements/{announcementId}: Stores announcements; accessible for
+ *   reading by anyone, but only writable by admins.
+ *
+ * Key Security Decisions:
+ * - User listing is disabled for user profiles to prevent enumeration.
+ * - All write operations are protected by authorization checks based on
+ *   ownership or role.
+ * - Flexible data shapes are permitted to enable rapid iteration during
+ *   prototyping.
+ *
+ * Denormalization for Authorization:
+ * - The 'instituteId' field in the /courses/{courseId} documents is used to
+ *   denormalize the owner for simpler rules.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Defines a helper function to check if the request is
+     *   authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Defines a helper function to check if the user ID matches
+     *   the authenticated user's ID.
+     * @param {string} userId The user ID to check.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Defines a helper function to check if the user is the
+     *   existing owner of a document.
+     * @param {string} userId The user ID to check.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Defines a helper function to check if the user is an admin.
+     */
+    function isAdmin() {
+      // TODO: Implement admin role check using a custom claim or a dedicated
+      //   collection. For prototyping, this defaults to false.
+      return false;
+    }
+
+    /**
+     * @description Security rules for user profiles.
+     * @path /userProfiles/{userId}
+     * @allow (create) Authenticated user creating their own profile.
+     * @allow (get) Authenticated user reading their own profile.
+     * @deny (list) Prevents listing all user profiles.
+     * @deny (create) Unauthenticated user attempting to create a profile.
+     * @deny (update) Authenticated user attempting to update someone else's
+     *   profile.
+     * @deny (delete) Authenticated user attempting to delete someone else's
+     *   profile.
+     * @principle Enforces document ownership for writes and restricts access
+     *   to a user's own profile.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Security rules for user notes.
+     * @path /users/{userId}/notes/{noteId}
+     * @allow (create) Authenticated user creating a note for themselves.
+     * @allow (get) Authenticated user reading their own note.
+     * @allow (list) Authenticated user listing their own notes.
+     * @deny (create) Unauthenticated user attempting to create a note.
+     * @deny (update) Authenticated user attempting to update someone else's
+     *   note.
+     * @deny (delete) Authenticated user attempting to delete someone else's
+     *   note.
+     * @principle Enforces document ownership for writes and restricts access
+     *   to a user's own data tree.
+     */
+    match /users/{userId}/notes/{noteId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Security rules for courses.
+     * @path /courses/{courseId}
+     * @allow (get) Any user can read a course.
+     * @allow (list) Any user can list courses.
+     * @allow (create) Only an institute can create a course with the instituteId.
+     * @deny (create) User attempting to create a course for another institute.
+     * @deny (update) User attempting to update a course they don't own.
+     * @deny (delete) User attempting to delete a course they don't own.
+     * @principle Allows public read access but restricts writes to the owning
+     *   institute.
+     */
+    match /courses/{courseId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.instituteId == request.auth.uid;
+      allow update: if isSignedIn() && resource != null && resource.data.instituteId == request.auth.uid;
+      allow delete: if isSignedIn() && resource != null && resource.data.instituteId == request.auth.uid;
+    }
+
+    /**
+     * @description Security rules for announcements.
+     * @path /announcements/{announcementId}
+     * @allow (get) Any user can read an announcement.
+     * @allow (list) Any user can list announcements.
+     * @allow (create) Only an admin can create an announcement.
+     * @deny (create) Non-admin user attempting to create an announcement.
+     * @deny (update) Non-admin user attempting to update an announcement.
+     * @deny (delete) Non-admin user attempting to delete an announcement.
+     * @principle Restricts write access to admins only.
+     */
+    match /announcements/{announcementId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && isSignedIn();
+      allow update: if isAdmin() && isSignedIn() && resource != null;
+      allow delete: if isAdmin() && isSignedIn() && resource != null;
+    }
+  }
+}
