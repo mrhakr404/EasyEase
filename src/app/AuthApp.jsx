@@ -2,6 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useFirebase } from '@/firebase';
+import { 
+  initiateEmailSignUp, 
+  initiateEmailSignIn 
+} from '@/firebase/non-blocking-login';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // --- Helper Functions & SVGs ---
 
@@ -35,157 +41,112 @@ const LockIcon = ({ ...props }) => (
     </svg>
 );
 
-
-// --- Firebase SDK Imports (assuming they are available globally or bundled) ---
-// Note: In a real app, you'd use `import { ... } from "firebase/..."`
-const { initializeApp, getApps, getApp } = window.firebase.app;
-const { 
-  getAuth, 
-  onAuthStateChanged, 
-  signInWithCustomToken, 
-  signInAnonymously,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut
-} = window.firebase.auth;
-const { getFirestore, doc, setDoc, serverTimestamp } = window.firebase.firestore;
-
-
 // --- Main Application Component ---
+export default function AuthApp({ initialView = 'login' }) {
+    const { user, isUserLoading, auth, firestore, userError } = useFirebase();
+    const [appState, setAppState] = useState('loading'); // 'loading', 'auth', 'dashboard'
+    const [error, setError] = useState('');
+    const [emailForDashboard, setEmailForDashboard] = useState('');
 
-export default function AuthApp() {
-  const [appState, setAppState] = useState('loading'); // 'loading', 'auth', 'dashboard'
-  const [user, setUser] = useState(null);
-  const [error, setError] = useState('');
-
-  // Firebase instances
-  const firebaseApp = useMemo(() => {
-    try {
-      return getApps().length === 0 ? initializeApp(__firebase_config) : getApp();
-    } catch (e) {
-      console.error("Firebase initialization failed:", e);
-      setError("Critical: Firebase config is invalid.");
-      return null;
-    }
-  }, []);
-  const auth = useMemo(() => firebaseApp ? getAuth(firebaseApp) : null, [firebaseApp]);
-  const db = useMemo(() => firebaseApp ? getFirestore(firebaseApp) : null, [firebaseApp]);
-
-  useEffect(() => {
-    if (!auth) {
-      setAppState('auth'); // Can't do anything without auth
-      return;
-    };
-    
-    // Initial anonymous/custom token sign-in
-    const initialSignIn = async () => {
-      try {
-        if (__initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+    useEffect(() => {
+        if (isUserLoading) {
+            setAppState('loading');
+        } else if (user) {
+            setEmailForDashboard(user.email);
+            setAppState('dashboard');
         } else {
-          if (!auth.currentUser) {
-            await signInAnonymously(auth);
-          }
+            setAppState('auth');
         }
-      } catch (err) {
-        console.error("Initial sign-in failed:", err);
-        setError("Failed to authenticate session.");
-      }
+    }, [user, isUserLoading]);
+
+    useEffect(() => {
+        if (userError) {
+            setError(userError.message.replace('Firebase: ', ''));
+        }
+    }, [userError]);
+
+    const handleSignOut = async () => {
+        if (auth) {
+            try {
+                await auth.signOut();
+                // onAuthStateChanged will handle the rest
+            } catch (err) {
+                console.error("Sign out failed:", err);
+                setError(err.message);
+            }
+        }
     };
 
-    initialSignIn();
+    const renderContent = () => {
+        switch (appState) {
+            case 'loading':
+                return <LoadingSpinner />;
+            case 'dashboard':
+                return <Dashboard userEmail={emailForDashboard} onSignOut={handleSignOut} />;
+            case 'auth':
+            default:
+                return <AuthScreen auth={auth} db={firestore} error={error} setError={setError} initialView={initialView} />;
+        }
+    };
 
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser && !currentUser.isAnonymous) {
-        setUser(currentUser);
-        setAppState('dashboard');
-      } else {
-        setUser(null);
-        setAppState('auth');
-      }
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error("Sign out failed:", err);
-      setError(err.message);
-    }
-  };
-
-  const renderContent = () => {
-    switch (appState) {
-      case 'loading':
-        return <LoadingSpinner />;
-      case 'dashboard':
-        return <Dashboard user={user} onSignOut={handleSignOut} />;
-      case 'auth':
-      default:
-        return <AuthScreen auth={auth} db={db} error={error} setError={setError} setAppState={setAppState} />;
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 font-sans p-4">
-      {renderContent()}
-    </div>
-  );
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-transparent font-sans p-4">
+            {renderContent()}
+        </div>
+    );
 }
 
-
 // --- Screen Components ---
+const AuthScreen = ({ auth, db, error, setError, initialView }) => {
+    const [isLoginView, setIsLoginView] = useState(initialView === 'login');
 
-const AuthScreen = ({ auth, db, error, setError, setAppState }) => {
-  const [isLoginView, setIsLoginView] = useState(true);
+    useEffect(() => {
+        setIsLoginView(initialView === 'login');
+    }, [initialView]);
 
-  return (
-    <div className="w-full max-w-md">
-      <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
-        <div className="p-8">
-          <h2 className="text-3xl font-bold text-white text-center mb-2">
-            {isLoginView ? 'Welcome Back' : 'Create Account'}
-          </h2>
-          <p className="text-gray-400 text-center mb-8">
-            {isLoginView ? 'Sign in to continue' : 'Get started with a new account'}
-          </p>
-          
-          {error && <ErrorMessage message={error} />}
+    return (
+        <div className="w-full max-w-md">
+            <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
+                <div className="p-8">
+                    <h2 className="text-3xl font-bold text-white text-center mb-2 font-headline">
+                        {isLoginView ? 'Welcome Back' : 'Create Account'}
+                    </h2>
+                    <p className="text-muted-foreground text-center mb-8">
+                        {isLoginView ? 'Sign in to continue' : 'Get started with a new account'}
+                    </p>
 
-          {isLoginView ? 
-            <LoginForm auth={auth} setError={setError} setAppState={setAppState} /> : 
-            <SignUpForm auth={auth} db={db} setError={setError} setAppState={setAppState} />}
+                    {error && <ErrorMessage message={error} />}
 
-          <div className="text-center mt-6">
-            <button
-              onClick={() => {
-                setIsLoginView(!isLoginView);
-                setError('');
-              }}
-              className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300"
-            >
-              {isLoginView ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
-            </button>
-          </div>
+                    {isLoginView ?
+                        <LoginForm auth={auth} setError={setError} /> :
+                        <SignUpForm auth={auth} db={db} setError={setError} />}
+
+                    <div className="text-center mt-6">
+                        <button
+                            onClick={() => {
+                                setIsLoginView(!isLoginView);
+                                setError('');
+                            }}
+                            className="text-accent hover:text-white transition-colors duration-300"
+                        >
+                            {isLoginView ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
-const Dashboard = ({ user, onSignOut }) => (
+const Dashboard = ({ userEmail, onSignOut }) => (
   <div className="w-full max-w-md text-center">
-    <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-8">
-      <UserIcon className="w-16 h-16 mx-auto text-cyan-400 mb-4"/>
-      <h2 className="text-2xl font-bold text-white mb-2">Welcome!</h2>
-      <p className="text-gray-400 mb-6 truncate">{user?.email || user?.uid}</p>
+    <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-8">
+      <UserIcon className="w-16 h-16 mx-auto text-primary mb-4"/>
+      <h2 className="text-2xl font-bold text-white mb-2 font-headline">Welcome!</h2>
+      <p className="text-muted-foreground mb-6 truncate">{userEmail}</p>
       <button
         onClick={onSignOut}
-        className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75"
+        className="w-full bg-primary text-primary-foreground font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-75"
       >
         Sign Out
       </button>
@@ -196,13 +157,13 @@ const Dashboard = ({ user, onSignOut }) => (
 
 // --- Form Components ---
 
-const LoginForm = ({ auth, setError, setAppState }) => {
+const LoginForm = ({ auth, setError }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setError('');
         if (!email || !password) {
@@ -210,17 +171,9 @@ const LoginForm = ({ auth, setError, setAppState }) => {
             return;
         }
         setIsLoading(true);
-        setAppState('loading');
-
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // onAuthStateChanged will handle navigation
-        } catch (err) {
-            setError(err.message.replace('Firebase: ', ''));
-            setAppState('auth');
-        } finally {
-            setIsLoading(false);
-        }
+        // Uses non-blocking sign-in. Auth state change will be caught by the listener.
+        initiateEmailSignIn(auth, email, password);
+        // We don't need to setLoading(false) here because on error, the userError in the parent will trigger a state update
     };
 
     return (
@@ -232,6 +185,7 @@ const LoginForm = ({ auth, setError, setAppState }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
                 icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+                autoComplete="email"
             />
             <InputField
                 id="login-password"
@@ -246,11 +200,12 @@ const LoginForm = ({ auth, setError, setAppState }) => {
                     <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
                 }
                 onActionClick={() => setShowPassword(!showPassword)}
+                autoComplete="current-password"
             />
             <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                className="w-full bg-primary text-primary-foreground font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
             >
                 {isLoading ? <LoadingSpinner size="small" /> : 'Login'}
             </button>
@@ -258,7 +213,7 @@ const LoginForm = ({ auth, setError, setAppState }) => {
     );
 };
 
-const SignUpForm = ({ auth, db, setError, setAppState }) => {
+const SignUpForm = ({ auth, db, setError }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -278,26 +233,28 @@ const SignUpForm = ({ auth, db, setError, setAppState }) => {
         }
         
         setIsLoading(true);
-        setAppState('loading');
 
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await auth.createUserWithEmailAndPassword(email, password);
             const user = userCredential.user;
 
             // Save user profile to Firestore
-            const userProfileRef = doc(db, 'artifacts', __app_id, 'users', user.uid, 'profile', 'main');
+            const userProfileRef = doc(db, 'userProfiles', user.uid);
             await setDoc(userProfileRef, {
                 email: user.email,
+                id: user.uid,
+                firstName: '',
+                lastName: '',
+                photoURL: '',
+                role: 'student', // Default role
                 createdAt: serverTimestamp(),
             });
-
-            // onAuthStateChanged will handle navigation
+            // onAuthStateChanged will handle navigation to dashboard
         } catch (err) {
             setError(err.message.replace('Firebase: ', ''));
-            setAppState('auth');
-        } finally {
             setIsLoading(false);
         }
+        // Don't set isLoading to false on success, as the component will unmount
     };
     
     return (
@@ -309,6 +266,7 @@ const SignUpForm = ({ auth, db, setError, setAppState }) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
                 icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+                autoComplete="email"
             />
             <InputField
                 id="signup-password"
@@ -323,6 +281,7 @@ const SignUpForm = ({ auth, db, setError, setAppState }) => {
                     <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
                 }
                 onActionClick={() => setShowPassword(!showPassword)}
+                autoComplete="new-password"
             />
             <InputField
                 id="signup-confirm-password"
@@ -331,11 +290,12 @@ const SignUpForm = ({ auth, db, setError, setAppState }) => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
                 icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+                autoComplete="new-password"
             />
             <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                className="w-full bg-primary text-primary-foreground font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
             >
                 {isLoading ? <LoadingSpinner size="small" /> : 'Sign Up'}
             </button>
@@ -345,7 +305,7 @@ const SignUpForm = ({ auth, db, setError, setAppState }) => {
 
 // --- UI Components ---
 
-const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, onActionClick }) => (
+const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, onActionClick, autoComplete }) => (
   <div className="relative">
     <span className="absolute inset-y-0 left-0 flex items-center pl-3">
       {icon}
@@ -356,8 +316,9 @@ const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, 
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-300"
+      className="w-full bg-background/70 text-white placeholder-gray-400 border border-white/20 rounded-lg py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-300"
       required
+      autoComplete={autoComplete}
     />
     {actionIcon && (
       <button type="button" onClick={onActionClick} className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -374,5 +335,5 @@ const ErrorMessage = ({ message }) => (
 );
 
 const LoadingSpinner = ({ size = 'large' }) => (
-  <div className={`animate-spin rounded-full border-t-2 border-b-2 border-cyan-400 ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
+  <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );

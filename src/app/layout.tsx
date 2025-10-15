@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
+import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 
 export const metadata: Metadata = {
@@ -26,9 +27,11 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col')}>
-        <ClientCursorEffect />
-        {children}
-        <Toaster />
+        <FirebaseClientProvider>
+          <ClientCursorEffect />
+          {children}
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );
