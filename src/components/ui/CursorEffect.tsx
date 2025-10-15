@@ -66,7 +66,7 @@ export function CursorEffect() {
     if (ripples.length > 0) {
       const timer = setTimeout(() => {
         setRipples((prev) => prev.slice(1));
-      }, 1000); // Corresponds to animation duration
+      }, 500); // Corresponds to animation duration
       return () => clearTimeout(timer);
     }
   }, [ripples]);
@@ -86,14 +86,14 @@ export function CursorEffect() {
           'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9998]',
           'border-2 border-yellow-300',
           'transition-[box-shadow,transform]',
-          isClicked ? 'scale-110' : '',
+          isClicked ? 'scale-90' : '',
           isPointer ? 'h-8 w-8 shadow-[0_0_15px_2px_rgba(250,204,21,0.7)]' : 'h-7 w-7'
         )}
       />
       {ripples.map((ripple) => (
         <div
           key={ripple.id}
-          className="pointer-events-none fixed z-[9999] animate-ripple rounded-full border border-yellow-300"
+          className="pointer-events-none fixed z-[9999] animate-ripple rounded-full border-yellow-300 bg-transparent"
           style={{
             left: ripple.x,
             top: ripple.y,

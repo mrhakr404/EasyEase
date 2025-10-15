@@ -89,8 +89,8 @@ export default {
           },
         },
         'ripple': {
-          '0%': { width: '0px', height: '0px', opacity: '0.5' },
-          '100%': { width: '50px', height: '50px', opacity: '0' },
+          '0%': { width: '0px', height: '0px', opacity: '1', borderWidth: '4px' },
+          '100%': { width: '60px', height: '60px', opacity: '0', borderWidth: '0px' },
         },
         'ripple-full': {
           '0%': { width: '0px', height: '0px', opacity: '0.5' },
@@ -100,7 +100,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'ripple': 'ripple 0.5s linear forwards',
+        'ripple': 'ripple 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
         'ripple-full': 'ripple-full 1s linear forwards',
       },
     },
