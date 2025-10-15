@@ -1,0 +1,378 @@
+
+"use client";
+
+import React, { useState, useEffect, useMemo } from 'react';
+
+// --- Helper Functions & SVGs ---
+
+const Eye = ({ ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOff = ({ ...props }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" x2="22" y1="2" y2="22" />
+  </svg>
+);
+
+const UserIcon = ({ ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
+
+const LockIcon = ({ ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+);
+
+
+// --- Firebase SDK Imports (assuming they are available globally or bundled) ---
+// Note: In a real app, you'd use `import { ... } from "firebase/..."`
+const { initializeApp, getApps, getApp } = window.firebase.app;
+const { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithCustomToken, 
+  signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
+} = window.firebase.auth;
+const { getFirestore, doc, setDoc, serverTimestamp } = window.firebase.firestore;
+
+
+// --- Main Application Component ---
+
+export default function AuthApp() {
+  const [appState, setAppState] = useState('loading'); // 'loading', 'auth', 'dashboard'
+  const [user, setUser] = useState(null);
+  const [error, setError] = useState('');
+
+  // Firebase instances
+  const firebaseApp = useMemo(() => {
+    try {
+      return getApps().length === 0 ? initializeApp(__firebase_config) : getApp();
+    } catch (e) {
+      console.error("Firebase initialization failed:", e);
+      setError("Critical: Firebase config is invalid.");
+      return null;
+    }
+  }, []);
+  const auth = useMemo(() => firebaseApp ? getAuth(firebaseApp) : null, [firebaseApp]);
+  const db = useMemo(() => firebaseApp ? getFirestore(firebaseApp) : null, [firebaseApp]);
+
+  useEffect(() => {
+    if (!auth) {
+      setAppState('auth'); // Can't do anything without auth
+      return;
+    };
+    
+    // Initial anonymous/custom token sign-in
+    const initialSignIn = async () => {
+      try {
+        if (__initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          if (!auth.currentUser) {
+            await signInAnonymously(auth);
+          }
+        }
+      } catch (err) {
+        console.error("Initial sign-in failed:", err);
+        setError("Failed to authenticate session.");
+      }
+    };
+
+    initialSignIn();
+
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser && !currentUser.isAnonymous) {
+        setUser(currentUser);
+        setAppState('dashboard');
+      } else {
+        setUser(null);
+        setAppState('auth');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error("Sign out failed:", err);
+      setError(err.message);
+    }
+  };
+
+  const renderContent = () => {
+    switch (appState) {
+      case 'loading':
+        return <LoadingSpinner />;
+      case 'dashboard':
+        return <Dashboard user={user} onSignOut={handleSignOut} />;
+      case 'auth':
+      default:
+        return <AuthScreen auth={auth} db={db} error={error} setError={setError} setAppState={setAppState} />;
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 font-sans p-4">
+      {renderContent()}
+    </div>
+  );
+}
+
+
+// --- Screen Components ---
+
+const AuthScreen = ({ auth, db, error, setError, setAppState }) => {
+  const [isLoginView, setIsLoginView] = useState(true);
+
+  return (
+    <div className="w-full max-w-md">
+      <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
+        <div className="p-8">
+          <h2 className="text-3xl font-bold text-white text-center mb-2">
+            {isLoginView ? 'Welcome Back' : 'Create Account'}
+          </h2>
+          <p className="text-gray-400 text-center mb-8">
+            {isLoginView ? 'Sign in to continue' : 'Get started with a new account'}
+          </p>
+          
+          {error && <ErrorMessage message={error} />}
+
+          {isLoginView ? 
+            <LoginForm auth={auth} setError={setError} setAppState={setAppState} /> : 
+            <SignUpForm auth={auth} db={db} setError={setError} setAppState={setAppState} />}
+
+          <div className="text-center mt-6">
+            <button
+              onClick={() => {
+                setIsLoginView(!isLoginView);
+                setError('');
+              }}
+              className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300"
+            >
+              {isLoginView ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Dashboard = ({ user, onSignOut }) => (
+  <div className="w-full max-w-md text-center">
+    <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-8">
+      <UserIcon className="w-16 h-16 mx-auto text-cyan-400 mb-4"/>
+      <h2 className="text-2xl font-bold text-white mb-2">Welcome!</h2>
+      <p className="text-gray-400 mb-6 truncate">{user?.email || user?.uid}</p>
+      <button
+        onClick={onSignOut}
+        className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75"
+      >
+        Sign Out
+      </button>
+    </div>
+  </div>
+);
+
+
+// --- Form Components ---
+
+const LoginForm = ({ auth, setError, setAppState }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (!email || !password) {
+            setError('Please fill in all fields.');
+            return;
+        }
+        setIsLoading(true);
+        setAppState('loading');
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // onAuthStateChanged will handle navigation
+        } catch (err) {
+            setError(err.message.replace('Firebase: ', ''));
+            setAppState('auth');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <InputField
+                id="login-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email Address"
+                icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+            />
+            <InputField
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+                actionIcon={
+                    showPassword ? 
+                    <EyeOff className="w-5 h-5 text-gray-400 hover:text-white" /> : 
+                    <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
+                }
+                onActionClick={() => setShowPassword(!showPassword)}
+            />
+            <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+            >
+                {isLoading ? <LoadingSpinner size="small" /> : 'Login'}
+            </button>
+        </form>
+    );
+};
+
+const SignUpForm = ({ auth, db, setError, setAppState }) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
+        if (!email || !password) {
+            setError("Please fill in all fields.");
+            return;
+        }
+        
+        setIsLoading(true);
+        setAppState('loading');
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Save user profile to Firestore
+            const userProfileRef = doc(db, 'artifacts', __app_id, 'users', user.uid, 'profile', 'main');
+            await setDoc(userProfileRef, {
+                email: user.email,
+                createdAt: serverTimestamp(),
+            });
+
+            // onAuthStateChanged will handle navigation
+        } catch (err) {
+            setError(err.message.replace('Firebase: ', ''));
+            setAppState('auth');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <InputField
+                id="signup-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email Address"
+                icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+            />
+            <InputField
+                id="signup-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+                actionIcon={
+                    showPassword ? 
+                    <EyeOff className="w-5 h-5 text-gray-400 hover:text-white" /> : 
+                    <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
+                }
+                onActionClick={() => setShowPassword(!showPassword)}
+            />
+            <InputField
+                id="signup-confirm-password"
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm Password"
+                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+            />
+            <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-cyan-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-600 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+            >
+                {isLoading ? <LoadingSpinner size="small" /> : 'Sign Up'}
+            </button>
+        </form>
+    );
+};
+
+// --- UI Components ---
+
+const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, onActionClick }) => (
+  <div className="relative">
+    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+      {icon}
+    </span>
+    <input
+      id={id}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full bg-white/10 text-white placeholder-gray-400 border border-white/20 rounded-lg py-3 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-300"
+      required
+    />
+    {actionIcon && (
+      <button type="button" onClick={onActionClick} className="absolute inset-y-0 right-0 flex items-center pr-3">
+        {actionIcon}
+      </button>
+    )}
+  </div>
+);
+
+const ErrorMessage = ({ message }) => (
+  <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6 text-sm text-center">
+    {message}
+  </div>
+);
+
+const LoadingSpinner = ({ size = 'large' }) => (
+  <div className={`animate-spin rounded-full border-t-2 border-b-2 border-cyan-400 ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
+);
