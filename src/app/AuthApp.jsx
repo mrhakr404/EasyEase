@@ -2,12 +2,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useFirebase } from '@/firebase';
+import { useFirebase, errorEmitter } from '@/firebase';
 import { 
   initiateEmailSignIn 
 } from '@/firebase/non-blocking-login';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 
 // --- Helper Functions & SVGs ---
@@ -62,8 +62,22 @@ export default function AuthApp({ initialView = 'login' }) {
     }, [user, isUserLoading]);
 
     useEffect(() => {
+        const handleError = (err) => {
+             // The full error object is thrown, not a string
+            const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
+            setError(message);
+        };
+        
+        // Listen for auth errors emitted from anywhere in the app
+        errorEmitter.on('permission-error', handleError);
+        
+        // Use the userError from the main provider as a fallback
         if (userError) {
-            setError(userError.message.replace('Firebase: ', ''));
+            handleError(userError);
+        }
+
+        return () => {
+            errorEmitter.off('permission-error', handleError);
         }
     }, [userError]);
 
@@ -227,9 +241,18 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
             return;
         }
         setIsLoading(true);
-        // Uses non-blocking sign-in. Auth state change will be caught by the listener.
+        
+        // This listener will handle the error from initiateEmailSignIn
+        const handleError = (err) => {
+            const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
+            setError(message);
+            setIsLoading(false); // Stop loading on error
+            errorEmitter.off('permission-error', handleError); // Clean up listener
+        };
+        errorEmitter.on('permission-error', handleError);
+
+        // Uses non-blocking sign-in. Auth state change will be caught by the main listener.
         initiateEmailSignIn(auth, email, password);
-        // We don't need to setLoading(false) here because on error, the userError in the parent will trigger a state update
     };
 
     return (
@@ -403,7 +426,7 @@ const ForgotPasswordForm = ({ auth, setError, setSuccessMessage }) => {
         }
         setIsLoading(true);
         try {
-            await auth.sendPasswordResetEmail(email);
+            await sendPasswordResetEmail(auth, email);
             setSuccessMessage('Password reset email sent! Check your inbox.');
         } catch (err) {
             setError(err.message.replace('Firebase: ', ''));
@@ -474,7 +497,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
-
-    
