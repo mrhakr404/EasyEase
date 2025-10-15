@@ -4,6 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase/provider';
 import useUserProfile from '@/hooks/useUserProfile';
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+import { Hero } from '@/components/landing/hero';
 import { StaticSparkles } from '@/components/landing/static-sparkles';
 
 export default function Home() {
@@ -12,35 +15,38 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait until user and profile loading is complete
-    if (isUserLoading || isProfileLoading) {
-      return;
-    }
-
-    if (!user) {
-      router.replace('/login');
-    } else if (userProfile) {
+    // We only want to redirect if the user is already logged in.
+    if (!isUserLoading && !isProfileLoading && user && userProfile) {
       const { role } = userProfile;
       if (role === 'student') {
         router.replace('/dashboard/student');
       } else if (role === 'institute') {
         router.replace('/dashboard/institute');
-      } else {
-        // Fallback for admin or undefined roles
-        router.replace('/login');
       }
+      // If role is admin or something else, they'll just stay on the landing page for now.
     }
-    // If user exists but profile is still loading, the spinner will be shown.
-    // If profile fails to load, it will remain on this page with spinner.
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
-  // Render a loading spinner while determining the redirect path
+  // If we are checking for a user, show a loading screen to prevent flicker.
+  if (isUserLoading || isProfileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="absolute inset-0 -z-10">
+          <StaticSparkles />
+        </div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // If no user, show the full landing page.
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-       <div className="absolute inset-0 -z-10">
-            <StaticSparkles />
-       </div>
-      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-    </div>
+    <>
+      <Header />
+      <main className="flex-grow flex flex-col">
+        <Hero />
+      </main>
+      <Footer />
+    </>
   );
 }
