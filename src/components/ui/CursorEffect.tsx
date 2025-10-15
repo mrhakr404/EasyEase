@@ -7,7 +7,6 @@ export function CursorEffect() {
   const [position, setPosition] = useState({ x: -100, y: -100 });
   const [isPointer, setIsPointer] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
-  const [isClicking, setIsClicking] = useState(false);
 
   useEffect(() => {
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -33,20 +32,13 @@ export function CursorEffect() {
     }
   }, []);
 
-  const onMouseDown = useCallback(() => {
-    setIsClicking(true);
-    setTimeout(() => setIsClicking(false), 200);
-  }, []);
-
   useEffect(() => {
     document.body.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mousedown', onMouseDown);
 
     return () => {
       document.body.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mousedown', onMouseDown);
     };
-  }, [onMouseMove, onMouseDown]);
+  }, [onMouseMove]);
 
   if (isReducedMotion) {
     return null;
@@ -62,8 +54,7 @@ export function CursorEffect() {
         'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
         'bg-yellow-300/40',
         'transition-transform duration-200',
-        isPointer ? 'scale-[0.8] h-12 w-12' : 'h-8 w-8',
-        isClicking ? 'scale-[0.7] h-12 w-12' : ''
+        isPointer ? 'scale-[1.5] h-6 w-6' : 'h-8 w-8'
       )}
     />
   );
