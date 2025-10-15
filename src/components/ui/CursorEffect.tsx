@@ -93,31 +93,32 @@ export function CursorEffect() {
       <div
         style={haloStyle}
         className={cn(
-          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-300',
+          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-300 z-[9999]',
           'bg-[var(--cursor-glow-color)] opacity-10 blur-3xl',
           isInteractive ? 'scale-100' : 'scale-0',
-          'h-64 w-64 z-[9999]'
+          'h-64 w-64'
         )}
       />
        <div
         style={haloStyle}
         className={cn(
-          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full',
+          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
           'border-2 border-[var(--cursor-ripple-color)]',
           'transition-all duration-500 ease-out',
           isClicking ? 'scale-[2.5] opacity-0' : 'scale-0 opacity-0',
-          'h-8 w-8 z-[9999]'
+          'h-8 w-8'
         )}
       />
       <div
         style={haloStyle}
         className={cn(
-          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full',
+          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
           'border-2 border-[var(--cursor-halo-color)]',
           'transition-transform duration-200',
           isPointer ? 'scale-100' : 'scale-0',
-          isInteractive ? 'scale-125' : 'scale-100',
-          'h-8 w-8 z-[9999]'
+          isInteractive ? 'scale-110' : 'scale-100',
+          isClicking ? 'scale-90' : '',
+          'h-8 w-8'
         )}
       />
     </>
