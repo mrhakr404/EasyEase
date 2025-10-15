@@ -9,6 +9,7 @@ export function CursorEffect() {
   const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isInteractive, setIsInteractive] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -28,14 +29,25 @@ export function CursorEffect() {
 
   const onMouseMove = useCallback((e: MouseEvent) => {
     setPosition({ x: e.clientX, y: e.clientY });
+    if (e.target instanceof Element) {
+      const targetIsInteractive = e.target.closest('button, a, [role="button"]');
+      setIsInteractive(!!targetIsInteractive);
+    } else {
+      setIsInteractive(false);
+    }
   }, []);
 
-  const onMouseEnter = useCallback(() => {
-    setIsPointer(true);
+  const onMouseOver = useCallback((e: MouseEvent) => {
+    if (e.target instanceof Element) {
+      const targetIsInteractive = e.target.closest('button, a, [role="button"]');
+      setIsPointer(true);
+      setIsInteractive(!!targetIsInteractive);
+    }
   }, []);
-  
-  const onMouseLeave = useCallback(() => {
+
+  const onMouseOut = useCallback(() => {
     setIsPointer(false);
+    setIsInteractive(false);
   }, []);
 
   const onMouseDown = useCallback(() => {
@@ -49,20 +61,20 @@ export function CursorEffect() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       document.body.addEventListener('mousemove', onMouseMove);
-      document.body.addEventListener('mouseenter', onMouseEnter);
-      document.body.addEventListener('mouseleave', onMouseLeave);
+      document.body.addEventListener('mouseover', onMouseOver);
+      document.body.addEventListener('mouseout', onMouseOut);
       window.addEventListener('mousedown', onMouseDown);
       window.addEventListener('mouseup', onMouseUp);
 
       return () => {
         document.body.removeEventListener('mousemove', onMouseMove);
-        document.body.removeEventListener('mouseenter', onMouseEnter);
-        document.body.removeEventListener('mouseleave', onMouseLeave);
+        document.body.removeEventListener('mouseover', onMouseOver);
+        document.body.removeEventListener('mouseout', onMouseOut);
         window.removeEventListener('mousedown', onMouseDown);
         window.removeEventListener('mouseup', onMouseUp);
       };
     }
-  }, [onMouseMove, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp]);
+  }, [onMouseMove, onMouseOver, onMouseOut, onMouseDown, onMouseUp]);
   
   if (!isClient || isReducedMotion) {
     return null;
@@ -81,9 +93,9 @@ export function CursorEffect() {
       <div
         style={haloStyle}
         className={cn(
-          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-500',
+          'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform duration-300',
           'bg-[var(--cursor-glow-color)] opacity-10 blur-3xl',
-          isPointer ? 'scale-100' : 'scale-0',
+          isInteractive ? 'scale-100' : 'scale-0',
           'h-64 w-64 z-30'
         )}
       />
@@ -93,18 +105,19 @@ export function CursorEffect() {
           'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full',
           'border-2 border-[var(--cursor-ripple-color)]',
           'transition-all duration-500 ease-out',
-          isClicking ? 'scale-125 opacity-0' : 'scale-0 opacity-0',
-          'h-24 w-24 z-30'
+          isClicking ? 'scale-[2.5] opacity-0' : 'scale-0 opacity-0',
+          'h-8 w-8 z-30'
         )}
       />
       <div
         style={haloStyle}
         className={cn(
           'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full',
-          'border border-[var(--cursor-halo-color)]',
+          'border-2 border-[var(--cursor-halo-color)]',
           'transition-transform duration-200',
           isPointer ? 'scale-100' : 'scale-0',
-          'h-10 w-10 z-30'
+          isInteractive ? 'scale-150' : 'scale-100',
+          'h-8 w-8 z-30'
         )}
       />
     </>
