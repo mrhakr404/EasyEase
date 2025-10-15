@@ -45,6 +45,7 @@ export default function AuthApp({ initialView = 'login' }) {
     const { user, isUserLoading, auth, firestore, userError } = useFirebase();
     const [appState, setAppState] = useState('loading'); // 'loading', 'auth', 'dashboard'
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [emailForDashboard, setEmailForDashboard] = useState('');
 
     useEffect(() => {
@@ -84,7 +85,15 @@ export default function AuthApp({ initialView = 'login' }) {
                 return <Dashboard userEmail={emailForDashboard} onSignOut={handleSignOut} />;
             case 'auth':
             default:
-                return <AuthScreen auth={auth} db={firestore} error={error} setError={setError} initialView={initialView} />;
+                return <AuthScreen 
+                  auth={auth} 
+                  db={firestore} 
+                  error={error} 
+                  setError={setError} 
+                  successMessage={successMessage}
+                  setSuccessMessage={setSuccessMessage}
+                  initialView={initialView} 
+                />;
         }
     };
 
@@ -96,40 +105,86 @@ export default function AuthApp({ initialView = 'login' }) {
 }
 
 // --- Screen Components ---
-const AuthScreen = ({ auth, db, error, setError, initialView }) => {
-    const [isLoginView, setIsLoginView] = useState(initialView === 'login');
+const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessage, initialView }) => {
+    const [authView, setAuthView] = useState(initialView); // 'login', 'signup', 'forgot'
 
     useEffect(() => {
-        setIsLoginView(initialView === 'login');
+        setAuthView(initialView);
     }, [initialView]);
+
+    const resetMessages = () => {
+      setError('');
+      setSuccessMessage('');
+    }
+
+    const renderAuthContent = () => {
+      switch(authView) {
+        case 'signup':
+          return {
+            title: 'Create Account',
+            subtitle: 'Get started with a new account',
+            content: <SignUpForm auth={auth} db={db} setError={setError} />,
+            footer: (
+              <button
+                onClick={() => { setAuthView('login'); resetMessages(); }}
+                className="text-accent hover:text-white transition-colors duration-300"
+              >
+                Already have an account? Login
+              </button>
+            )
+          };
+        case 'forgot':
+          return {
+            title: 'Forgot Password',
+            subtitle: 'Enter your email to reset your password',
+            content: <ForgotPasswordForm auth={auth} setError={setError} setSuccessMessage={setSuccessMessage} />,
+            footer: (
+              <button
+                onClick={() => { setAuthView('login'); resetMessages(); }}
+                className="text-accent hover:text-white transition-colors duration-300"
+              >
+                Back to Login
+              </button>
+            )
+          };
+        case 'login':
+        default:
+          return {
+            title: 'Welcome Back',
+            subtitle: 'Sign in to continue',
+            content: <LoginForm auth={auth} setError={setError} onForgotPasswordClick={() => { setAuthView('forgot'); resetMessages(); }} />,
+            footer: (
+              <button
+                onClick={() => { setAuthView('signup'); resetMessages(); }}
+                className="text-accent hover:text-white transition-colors duration-300"
+              >
+                Don't have an account? Sign Up
+              </button>
+            )
+          };
+      }
+    };
+
+    const { title, subtitle, content, footer } = renderAuthContent();
 
     return (
         <div className="w-full max-w-md">
             <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
                 <div className="p-8">
                     <h2 className="text-3xl font-bold text-white text-center mb-2 font-headline">
-                        {isLoginView ? 'Welcome Back' : 'Create Account'}
+                        {title}
                     </h2>
                     <p className="text-muted-foreground text-center mb-8">
-                        {isLoginView ? 'Sign in to continue' : 'Get started with a new account'}
+                        {subtitle}
                     </p>
 
                     {error && <ErrorMessage message={error} />}
+                    {successMessage && <SuccessMessage message={successMessage} />}
 
-                    {isLoginView ?
-                        <LoginForm auth={auth} setError={setError} /> :
-                        <SignUpForm auth={auth} db={db} setError={setError} />}
+                    {content}
 
                     <div className="text-center mt-6">
-                        <button
-                            onClick={() => {
-                                setIsLoginView(!isLoginView);
-                                setError('');
-                            }}
-                            className="text-accent hover:text-white transition-colors duration-300"
-                        >
-                            {isLoginView ? "Don't have an account? Sign Up" : 'Already have an account? Login'}
-                        </button>
+                        {footer}
                     </div>
                 </div>
             </div>
@@ -156,7 +211,7 @@ const Dashboard = ({ userEmail, onSignOut }) => (
 
 // --- Form Components ---
 
-const LoginForm = ({ auth, setError }) => {
+const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -201,6 +256,15 @@ const LoginForm = ({ auth, setError }) => {
                 onActionClick={() => setShowPassword(!showPassword)}
                 autoComplete="current-password"
             />
+             <div className="text-right">
+                <button
+                    type="button"
+                    onClick={onForgotPasswordClick}
+                    className="text-sm text-accent hover:text-white transition-colors duration-300"
+                >
+                    Forgot Password?
+                </button>
+            </div>
             <button
                 type="submit"
                 disabled={isLoading}
@@ -323,6 +387,51 @@ const SignUpForm = ({ auth, db, setError }) => {
     );
 };
 
+const ForgotPasswordForm = ({ auth, setError, setSuccessMessage }) => {
+    const [email, setEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccessMessage('');
+        if (!email) {
+            setError('Please enter your email address.');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await auth.sendPasswordResetEmail(email);
+            setSuccessMessage('Password reset email sent! Check your inbox.');
+        } catch (err) {
+            setError(err.message.replace('Firebase: ', ''));
+        }
+        setIsLoading(false);
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <InputField
+                id="forgot-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email Address"
+                icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+                autoComplete="email"
+            />
+            <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-primary text-primary-foreground font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+            >
+                {isLoading ? <LoadingSpinner size="small" /> : 'Send Reset Email'}
+            </button>
+        </form>
+    );
+};
+
+
 // --- UI Components ---
 
 const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, onActionClick, autoComplete }) => (
@@ -354,6 +463,14 @@ const ErrorMessage = ({ message }) => (
   </div>
 );
 
+const SuccessMessage = ({ message }) => (
+    <div className="bg-green-500/20 border border-green-500/50 text-green-300 px-4 py-3 rounded-lg mb-6 text-sm text-center">
+      {message}
+    </div>
+  );
+
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
