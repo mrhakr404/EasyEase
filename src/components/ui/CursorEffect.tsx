@@ -116,7 +116,7 @@ export function CursorEffect() {
           'border-2 border-[var(--cursor-halo-color)]',
           'transition-transform duration-200',
           isPointer ? 'scale-100' : 'scale-0',
-          isInteractive ? 'scale-150' : 'scale-100',
+          isInteractive ? 'scale-125' : 'scale-100',
           'h-8 w-8 z-[9999]'
         )}
       />
