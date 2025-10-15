@@ -66,9 +66,9 @@ export function CursorEffect() {
       className={cn(
         'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
         'border-2 border-yellow-300',
-        'transition-transform duration-200',
-        isClicked ? 'scale-125' : '',
-        isPointer ? 'scale-[1.2] h-6 w-6' : 'h-8 w-8'
+        'transition-all duration-200',
+        isClicked ? 'scale-110' : '',
+        isPointer ? 'h-8 w-8 shadow-[0_0_15px_2px_rgba(250,204,21,0.7)]' : 'h-7 w-7'
       )}
     />
   );
