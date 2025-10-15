@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFirebase } from '@/firebase';
 import { 
-  initiateEmailSignUp, 
   initiateEmailSignIn 
 } from '@/firebase/non-blocking-login';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -219,6 +218,7 @@ const SignUpForm = ({ auth, db, setError }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [role, setRole] = useState('student');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -246,7 +246,7 @@ const SignUpForm = ({ auth, db, setError }) => {
                 firstName: '',
                 lastName: '',
                 photoURL: '',
-                role: 'student', // Default role
+                role: role,
                 createdAt: serverTimestamp(),
             });
             // onAuthStateChanged will handle navigation to dashboard
@@ -292,6 +292,27 @@ const SignUpForm = ({ auth, db, setError }) => {
                 icon={<LockIcon className="w-5 h-5 text-gray-400" />}
                 autoComplete="new-password"
             />
+            
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">I am signing up as a...</label>
+                <div className="flex w-full bg-background/70 border border-white/20 rounded-lg p-1">
+                    <button
+                        type="button"
+                        onClick={() => setRole('student')}
+                        className={`flex-1 py-2 px-4 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ring ${role === 'student' ? 'bg-primary text-primary-foreground' : 'text-white hover:bg-primary/20'}`}
+                    >
+                        Student
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('institute')}
+                        className={`flex-1 py-2 px-4 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ring ${role === 'institute' ? 'bg-primary text-primary-foreground' : 'text-white hover:bg-primary/20'}`}
+                    >
+                        Institute
+                    </button>
+                </div>
+            </div>
+
             <button
                 type="submit"
                 disabled={isLoading}
