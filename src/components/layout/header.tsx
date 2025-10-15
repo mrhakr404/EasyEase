@@ -4,12 +4,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, BookOpenCheck } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-const CursorEffect = dynamic(() => 
-  import('@/components/ui/CursorEffect').then((mod) => mod.CursorEffect),
-  { ssr: false }
-);
 
 export function Header() {
   const navLinks = [
@@ -20,7 +14,6 @@ export function Header() {
 
   return (
     <>
-      <CursorEffect />
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 max-w-screen-2xl items-center">
           <div className="mr-4 hidden md:flex">

@@ -6,17 +6,12 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { StaticSparkles } from '@/components/landing/static-sparkles';
+import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
 
 const ParticleBackground = dynamic(() =>
   import('@/components/ui/ParticleBackground').then((mod) => mod.ParticleBackground),
   { ssr: false, loading: () => <StaticSparkles /> }
 );
-
-const CursorEffect = dynamic(() => 
-  import('@/components/ui/CursorEffect').then((mod) => mod.CursorEffect),
-  { ssr: false }
-);
-
 
 export function Hero() {
   const [webGLSupported, setWebGLSupported] = useState(true);
@@ -34,7 +29,7 @@ export function Hero() {
       {webGLSupported ? (
         <>
           <ParticleBackground />
-          <CursorEffect />
+          <ClientCursorEffect />
         </>
       ) : (
         <StaticSparkles />

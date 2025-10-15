@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
+import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
+
 
 export const metadata: Metadata = {
   title: 'EnrollEase - The Future of Education',
@@ -24,6 +26,7 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col')}>
+        <ClientCursorEffect />
         {children}
         <Toaster />
       </body>
