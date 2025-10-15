@@ -233,7 +233,7 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         if (!email || !password) {
@@ -242,17 +242,17 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
         }
         setIsLoading(true);
         
-        // This listener will handle the error from initiateEmailSignIn
-        const handleError = (err) => {
+        try {
+            await initiateEmailSignIn(auth, email, password);
+            // On success, the onAuthStateChanged listener in the main app
+            // will handle the navigation to the dashboard.
+        } catch (err) {
+            // This will now catch auth/invalid-credential and other login errors
             const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
             setError(message);
-            setIsLoading(false); // Stop loading on error
-            errorEmitter.off('permission-error', handleError); // Clean up listener
-        };
-        errorEmitter.on('permission-error', handleError);
-
-        // Uses non-blocking sign-in. Auth state change will be caught by the main listener.
-        initiateEmailSignIn(auth, email, password);
+            setIsLoading(false);
+        }
+        // Don't set isLoading to false on success, because the component will unmount
     };
 
     return (
@@ -497,3 +497,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    

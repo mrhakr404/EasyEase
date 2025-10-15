@@ -13,14 +13,9 @@ export function initiateEmailSignUp(authInstance: Auth, email: string, password:
 }
 
 /** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await'.
-  // The onAuthStateChanged listener will handle the success case.
-  // We add a .catch() to handle specific failures like invalid credentials.
-  signInWithEmailAndPassword(authInstance, email, password)
-    .catch(error => {
-      // We emit the error to a global handler that can display it in the UI.
-      // This prevents the uncaught promise rejection from crashing the app.
-      errorEmitter.emit('permission-error', error);
-    });
+export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<any> {
+  // CRITICAL: Call signInWithEmailAndPassword directly. We return the promise so the UI can handle it.
+  return signInWithEmailAndPassword(authInstance, email, password);
 }
+
+    
