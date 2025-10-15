@@ -26,7 +26,7 @@ export default function RootLayout({
         />
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col')}>
-        <ClientCursorEffect />
+        <ClientCursorEffect enableRipple={true} />
         {children}
         <Toaster />
       </body>
