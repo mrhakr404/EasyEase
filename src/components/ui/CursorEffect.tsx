@@ -7,6 +7,7 @@ export function CursorEffect() {
   const [position, setPosition] = useState({ x: -100, y: -100 });
   const [isPointer, setIsPointer] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
 
   useEffect(() => {
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -32,11 +33,23 @@ export function CursorEffect() {
     }
   }, []);
 
+  const onMouseDown = () => {
+    setIsClicked(true);
+  };
+
+  const onMouseUp = () => {
+    setIsClicked(false);
+  };
+
   useEffect(() => {
     document.body.addEventListener('mousemove', onMouseMove);
+    document.body.addEventListener('mousedown', onMouseDown);
+    document.body.addEventListener('mouseup', onMouseUp);
 
     return () => {
       document.body.removeEventListener('mousemove', onMouseMove);
+      document.body.removeEventListener('mousedown', onMouseDown);
+      document.body.removeEventListener('mouseup', onMouseUp);
     };
   }, [onMouseMove]);
 
@@ -52,9 +65,10 @@ export function CursorEffect() {
       }}
       className={cn(
         'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
-        'bg-yellow-300/40',
+        'border-2 border-yellow-300',
         'transition-transform duration-200',
-        isPointer ? 'scale-[1.5] h-6 w-6' : 'h-8 w-8'
+        isClicked ? 'scale-125' : '',
+        isPointer ? 'scale-[1.2] h-6 w-6' : 'h-8 w-8'
       )}
     />
   );
