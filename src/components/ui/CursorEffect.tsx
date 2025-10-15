@@ -8,6 +8,7 @@ export function CursorEffect() {
   const [isPointer, setIsPointer] = useState(false);
   const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
+  const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([]);
 
   useEffect(() => {
     const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -33,10 +34,18 @@ export function CursorEffect() {
     }
   }, []);
 
-  const onMouseDown = useCallback(() => {
+  const onMouseDown = useCallback((e: MouseEvent) => {
     setIsClicking(true);
     setTimeout(() => setIsClicking(false), 200);
-  }, []);
+
+    if (!isReducedMotion) {
+      setRipples(prev => [...prev, {
+        id: Date.now(),
+        x: e.clientX,
+        y: e.clientY,
+      }]);
+    }
+  }, [isReducedMotion]);
 
   useEffect(() => {
     document.body.addEventListener('mousemove', onMouseMove);
@@ -48,23 +57,43 @@ export function CursorEffect() {
     };
   }, [onMouseMove, onMouseDown]);
 
-  if (isReducedMotion) {
+  const handleAnimationEnd = (id: number) => {
+    setRipples(prev => prev.filter(r => r.id !== id));
+  };
+
+  if (isReducedMotion && ripples.length === 0) {
     return null;
   }
 
   return (
-    <div
-      style={{
-        left: `${position.x}px`,
-        top: `${position.y}px`,
-      }}
-      className={cn(
-        'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
-        'bg-yellow-300/40',
-        'transition-transform duration-200',
-        isPointer ? 'scale-50 h-12 w-12' : 'h-8 w-8',
-        isClicking ? 'scale-[0.4] h-12 w-12' : ''
+    <>
+      {!isReducedMotion && (
+        <div
+          style={{
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+          }}
+          className={cn(
+            'pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9999]',
+            'bg-yellow-300/40',
+            'transition-transform duration-200',
+            isPointer ? 'scale-[0.8] h-12 w-12' : 'h-8 w-8',
+            isClicking ? 'scale-[0.7] h-12 w-12' : ''
+          )}
+        />
       )}
-    />
+      {ripples.map(ripple => (
+        <div
+          key={ripple.id}
+          className="pointer-events-none fixed -translate-x-1/2 -translate-y-1/2 rounded-full z-[9998] animate-ripple"
+          style={{
+            left: ripple.x,
+            top: ripple.y,
+            boxShadow: '0 0 0 0.5px hsl(var(--primary))',
+          }}
+          onAnimationEnd={() => handleAnimationEnd(ripple.id)}
+        />
+      ))}
+    </>
   );
 }
