@@ -19,7 +19,6 @@ import { DailyQuizCard } from '@/components/dashboard/DailyQuizCard';
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface').then(mod => mod.ChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -148,8 +147,6 @@ export default function StudentDashboardPage() {
             return <QuizGenerator />;
         case 'Whiteboard':
             return <Whiteboard />;
-        case 'AI Chat':
-            return <ChatInterface />;
         case 'Overview':
         default:
             return <Overview />;
@@ -159,7 +156,6 @@ export default function StudentDashboardPage() {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
-    { name: 'AI Chat', icon: BrainCircuit, color: 'text-teal-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
