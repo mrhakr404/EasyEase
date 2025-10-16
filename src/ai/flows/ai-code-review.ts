@@ -50,7 +50,7 @@ const aiCodeReviewFlow = ai.defineFlow(
     inputSchema: AICodeReviewInputSchema,
     outputSchema: AICodeReviewOutputSchema,
   },
-  async input => {
+  async (input) => {
     const { output } = await prompt(input);
     if (!output) {
       throw new Error("AI response was empty.");
