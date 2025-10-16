@@ -32,33 +32,17 @@ Tutor:
   },
 );
 
-const continueChatFlow = ai.defineFlow(
-    {
-        name: 'continueChatFlow',
-        inputSchema: ChatRequestSchema,
-        outputSchema: MessageDataSchema
-    },
-    async (request) => {
-        const { response } = await ai.generate({
-            prompt: tutorPrompt.prompt,
-            input: request,
-            model: 'googleai/gemini-2.5-flash',
-            stream: (chunk) => {
-              // Note: Streaming is not fully implemented on the client yet.
-              // This is a placeholder for future implementation.
-            },
-        });
-        
-        return {
-            role: 'model' as const,
-            text: response.text,
-        };
-    }
-);
-
-
-export async function continueChat(request: ChatRequest): Promise<{role: 'model'; text: string}> {
+export async function continueChat(request: ChatRequest): Promise<MessageData> {
   'use server';
-  const response = await continueChatFlow(request);
-  return response;
+
+  const { response } = await ai.generate({
+      prompt: tutorPrompt.prompt,
+      input: request,
+      model: 'googleai/gemini-2.5-flash',
+  });
+  
+  return {
+      role: 'model' as const,
+      text: response.text,
+  };
 }

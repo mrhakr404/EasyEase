@@ -57,8 +57,12 @@ const aiCodeReviewFlow = ai.defineFlow(
     outputSchema: AICodeReviewOutputSchema,
   },
   async input => {
-    const response = await prompt(input);
-    const output = response.output();
+    const { response } = await ai.generate({
+        prompt: prompt.prompt,
+        input,
+        model: 'googleai/gemini-2.5-flash',
+    });
+    const output = response.output;
     if (!output) {
       throw new Error("AI response was empty.");
     }
