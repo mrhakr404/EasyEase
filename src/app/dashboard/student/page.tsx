@@ -19,6 +19,7 @@ const MockWhiteboard = () => <div className="p-4">Whiteboard Component Loaded</d
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface').then(mod => mod.ChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = () => (
@@ -83,6 +84,8 @@ export default function StudentDashboardPage() {
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
+        case 'AI Chat':
+            return <ChatInterface />;
         case 'Overview':
         default:
             return <Overview />;
@@ -92,6 +95,7 @@ export default function StudentDashboardPage() {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     { name: 'Notes', icon: NotebookText },
+    { name: 'AI Chat', icon: BotMessageSquare },
     { name: 'Learning Path', icon: Route },
     { name: 'AR/VR Labs', icon: BrainCircuit },
     { name: 'Whiteboard', icon: Users },

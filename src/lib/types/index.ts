@@ -13,7 +13,7 @@ export interface UserProfile {
 }
 
 export interface Institute {
-  id: string;
+  id:string;
   name: string;
   ownerId: string; // The UID of the user who created the institute
   admins: string[]; // List of UIDs of institute admins
@@ -91,4 +91,21 @@ export interface Enrollment {
     status: 'active' | 'completed' | 'dropped';
     enrolledAt: Timestamp;
     progress?: number; // e.g., percentage completion
+}
+
+export interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
+  error?: boolean;
+  isStreaming?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  userId: string;
+  startTime: any; // serverTimestamp()
+  lastMessage: string;
+  lastActivity?: any; // serverTimestamp()
+  title?: string; // Optional: AI-generated title for the chat
 }
