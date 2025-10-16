@@ -39,37 +39,57 @@ export default function InstituteDashboardPage() {
       case 'Overview':
         return (
           <div className="animate-fade-in">
-             <h1 className="text-3xl font-bold mb-8 font-headline">Institute Dashboard</h1>
+             <h1 className="text-3xl md:text-4xl font-bold font-headline bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 py-1 mb-8">
+                Institute Dashboard
+              </h1>
               {/* SECURITY NOTE: All critical write actions (e.g., creating courses, enrolling students)
                   must be validated on the server-side via Firebase Callable Functions to ensure
                   the user has the 'institute' role and proper permissions. Client-side checks are for UI only.
               */}
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <Card className="transition-all duration-300 hover:shadow-sky-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                   <CardHeader>
-                    <CardTitle>Total Courses</CardTitle>
+                     <div className="flex items-center gap-3">
+                        <div className="p-2 bg-sky-500/20 rounded-lg border border-sky-500/30">
+                            <BookCopy className="w-5 h-5 text-sky-400" />
+                        </div>
+                        <CardTitle>Total Courses</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-4xl font-bold">12</p>
                     <p className="text-sm text-muted-foreground">Active Courses</p>
                   </CardContent>
                 </Card>
-                <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                <Card className="transition-all duration-300 hover:shadow-blue-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                   <CardHeader>
-                    <CardTitle>Total Students</CardTitle>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                            <Users className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <CardTitle>Total Students</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-4xl font-bold">452</p>
                     <p className="text-sm text-muted-foreground">Enrolled</p>
                   </CardContent>
                 </Card>
-                 <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                 <Card className="transition-all duration-300 hover:shadow-rose-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                   <CardHeader>
-                    <CardTitle>Analytics</CardTitle>
+                     <div className="flex items-center gap-3">
+                        <div className="p-2 bg-rose-500/20 rounded-lg border border-rose-500/30">
+                            <BarChart3 className="w-5 h-5 text-rose-400" />
+                        </div>
+                        <CardTitle>Analytics</CardTitle>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">Generate and view key reports.</p>
-                    <Button>Generate Monthly Report</Button>
+                    <Button>Generate Report</Button>
                   </CardContent>
                 </Card>
               </div>
@@ -165,7 +185,7 @@ export default function InstituteDashboardPage() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className="p-8 animate-fade-in" data-main-scroll>
+        <main className="p-8 animate-fade-in h-full overflow-y-auto" data-main-scroll>
           {renderContent()}
         </main>
       </SidebarInset>
