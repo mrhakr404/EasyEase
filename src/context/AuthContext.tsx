@@ -24,27 +24,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = useFirebaseAuth(); // Use the hook to get the auth instance
   const firestore = useFirestore();
 
+  const { user, initialized: authInitialized } = useFirebaseAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  // Directly use the user and initialized state from the useUser hook.
-  const { user, initialized: authInitialized } = useFirebaseAuth();
-
   useEffect(() => {
-    // If auth is checked and there's no user, or if firestore is not ready
-    if (authInitialized && (!user || !firestore)) {
+    if (!authInitialized || !firestore) {
+      return;
+    }
+
+    if (!user) {
       setProfile(null);
       setProfileLoading(false);
       // If user is on a protected route and not logged in, redirect
       if (pathname.startsWith('/dashboard')) {
         router.replace('/login');
       }
-      return;
-    }
-
-    // If there's no user, we don't need to fetch a profile.
-    if (!user) {
-      setProfileLoading(false);
       return;
     }
 
@@ -58,22 +53,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
-          
-          // Redirect logic
-          const targetDashboard = `/dashboard/${userProfile.role}`;
-          if (pathname !== targetDashboard && (pathname.startsWith('/dashboard') || pathname === '/' || pathname === '/login' || pathname === '/signup')) {
-            router.replace(targetDashboard);
-          }
 
+          const targetDashboard = `/dashboard/${userProfile.role}`;
+          const isProtectedAuthPage = pathname === '/login' || pathname === '/signup';
+          const isOnTargetDashboard = pathname === targetDashboard;
+          
+          if (!isOnTargetDashboard && (pathname.startsWith('/dashboard') || isProtectedAuthPage || pathname === '/')) {
+             router.replace(targetDashboard);
+          }
         } else {
-          // This can happen briefly on signup before profile is created
-          console.warn(`User profile not found for uid: ${user.uid}`);
+          console.warn(`User profile not found for uid: ${user.uid}. This can happen during signup.`);
           setProfile(null);
-           if (pathname.startsWith('/dashboard')) {
-            // If they are on a dashboard without a profile, something is wrong.
-            // Send them to login to be safe. Could also go to a create-profile page.
-             router.replace('/login');
-           }
+          // If on a dashboard without a profile, redirect away.
+          if (pathname.startsWith('/dashboard')) {
+            router.replace('/login');
+          }
         }
         setProfileLoading(false);
       },
@@ -93,8 +87,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Overall loading is true if auth isn't checked OR if a user exists but their profile isn't loaded yet.
   const loading = !authInitialized || (!!user && profileLoading);
-
+  
+  // Determine if we should show a loader.
+  // Show loader if we are on a dashboard page, or if we are on the root page with a logged-in user (who will be redirected).
   const shouldShowLoader = loading && (pathname.startsWith('/dashboard') || (pathname === '/' && !!user));
+
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, authInitialized }}>
