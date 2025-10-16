@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles, HelpCircle } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles, HelpCircle, FileText } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -23,9 +23,10 @@ const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer').then(mod => mod.PdfSummarizer), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
-const Overview = () => {
+const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
     const { user, profile } = useAuth();
     const firestore = useFirestore();
 
@@ -119,7 +120,23 @@ const Overview = () => {
                     </CardContent>
                 </Card>
                 
-                <DailyQuizCard className="md:col-span-2 lg:col-span-4" />
+                <DailyQuizCard className="lg:col-span-3" />
+
+                <Card className="lg:col-span-1 transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-violet-500/20 rounded-lg border border-violet-500/30">
+                                <ArrowRight className="w-5 h-5 text-violet-400" />
+                            </div>
+                            <CardTitle>Quick Actions</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-2">
+                        <Button onClick={() => setActiveComponent('Learning Path')} variant="outline">View Learning Path</Button>
+                        <Button onClick={() => setActiveComponent('PDF Summarizer')} variant="outline">Summarize a Document</Button>
+                    </CardContent>
+                </Card>
                 
             </div>
         </div>
@@ -141,11 +158,13 @@ export default function StudentDashboardPage() {
             return <LearningPath />;
         case 'Quiz Generator':
             return <QuizGenerator />;
+        case 'PDF Summarizer':
+            return <PdfSummarizer />;
         case 'Whiteboard':
             return <Whiteboard />;
         case 'Overview':
         default:
-            return <Overview />;
+            return <Overview setActiveComponent={setActiveComponent}/>;
     }
   };
 
@@ -155,6 +174,7 @@ export default function StudentDashboardPage() {
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
+    { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400' },
     { name: 'Whiteboard', icon: Users, color: 'text-blue-400' },
   ];
 
