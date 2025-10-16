@@ -150,6 +150,18 @@
         "createdAt",
         "adminId"
       ]
+    },
+    "Institute": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Institute",
+      "type": "object",
+      "description": "Represents an institute on the platform.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "name", "ownerId"]
     }
   },
   "auth": {
@@ -167,13 +179,27 @@
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information. The 'userId' parameter is the unique identifier for the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            }
-          ]
+          "description": "Stores user profile information. The 'userId' parameter is the unique identifier for the user."
+        }
+      },
+      {
+        "path": "/institutes/{instituteId}",
+        "definition": {
+            "entityName": "Institute",
+            "schema": {
+                "$ref": "#/backend/entities/Institute"
+            },
+            "description": "Root collection for all institutes."
+        }
+      },
+      {
+        "path": "/institutes/{instituteId}/members/{userId}",
+        "definition": {
+            "entityName": "UserProfile",
+            "schema": {
+                "$ref": "#/backend/entities/UserProfile"
+            },
+            "description": "Subcollection storing members of an institute, mirroring the UserProfile."
         }
       },
       {
@@ -183,17 +209,7 @@
           "schema": {
             "$ref": "#/backend/entities/Note"
           },
-          "description": "Stores notes for each user.  Path-based ownership ensures only the user can access their notes. The 'userId' parameter identifies the user, and 'noteId' is the unique identifier for the note.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "Unique identifier for the user."
-            },
-            {
-              "name": "noteId",
-              "description": "Unique identifier for the note."
-            }
-          ]
+          "description": "Stores notes for each user. Path-based ownership ensures only the user can access their notes."
         }
       },
       {
@@ -203,13 +219,17 @@
           "schema": {
             "$ref": "#/backend/entities/Course"
           },
-          "description": "Stores course information. Includes the 'instituteId' to identify the institute that owns the course, and 'studentIds' array for enrolled students. The 'courseId' parameter is the unique identifier for the course.",
-          "params": [
-            {
-              "name": "courseId",
-              "description": "Unique identifier for the course."
-            }
-          ]
+          "description": "Stores course information. Includes the 'instituteId' to identify the institute that owns the course."
+        }
+      },
+      {
+        "path": "/courses/{courseId}/enrollments/{enrollmentId}",
+        "definition": {
+            "entityName": "Enrollment",
+            "schema": {
+                "$ref": "#/backend/entities/Enrollment"
+            },
+            "description": "Subcollection tracking student enrollments for a course."
         }
       },
       {
@@ -219,16 +239,10 @@
           "schema": {
             "$ref": "#/backend/entities/Announcement"
           },
-          "description": "Stores announcements. Accessible to admins. The 'announcementId' parameter is the unique identifier for the announcement.",
-          "params": [
-            {
-              "name": "announcementId",
-              "description": "Unique identifier for the announcement."
-            }
-          ]
+          "description": "Stores system-wide announcements."
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure security, scalability, and ease of debugging, following the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). Authorization Independence is achieved through denormalization of authorization data.  The use of hierarchical paths for user-owned data (`/users/{userId}/notes/{noteId}`) provides a secure and efficient way to manage access based on ownership. The `announcements` collection is segregated to ensure a homogeneous security posture, allowing for simple list operations. The structure supports QAPs by avoiding the need for filtering in rules.  The `userProfiles` collection stores user profile information. Each user's notes are stored in a subcollection `/users/{userId}/notes`. Courses are stored in the `/courses` collection, with each course document containing an `instituteId` field referencing the institute that owns the course, and a `studentIds` array representing enrolled students. Announcements are stored in the `/announcements` collection, accessible to admins.  This design enables robust security rules without complex `get()` calls, supports atomic operations, and facilitates clear and maintainable authorization logic."
+    "reasoning": "The Firestore structure uses a hybrid of flat and nested collections. Root collections like 'users', 'institutes', and 'courses' allow for simple, scalable queries. Nested subcollections like 'institutes/{instituteId}/members' and 'courses/{courseId}/enrollments' are used for data that is tightly coupled to its parent, ensuring clear ownership and enabling more granular security rules. This balances query flexibility with data scoping and security."
   }
 }

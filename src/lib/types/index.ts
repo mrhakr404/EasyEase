@@ -9,7 +9,7 @@ export interface UserProfile {
   photoURL?: string;
   role: 'student' | 'institute' | 'admin';
   createdAt: Timestamp;
-  // instituteId could be added here if a user can only belong to one institute
+  instituteId?: string; // ID of the institute the user belongs to
 }
 
 export interface Institute {
@@ -68,7 +68,7 @@ interface Resource {
 }
 
 interface Attachment {
-  name: string;
+  name:string;
   url: string; // URL to Firebase Storage
   type: 'file' | 'video' | 'link';
 }
