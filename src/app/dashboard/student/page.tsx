@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -21,7 +21,7 @@ import { DailyQuizCard } from '@/components/dashboard/DailyQuizCard';
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const Whiteboard = dynamic(() => import('@/components/dashboard/Whiteboard').then(mod => mod.Whiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer').then(mod => mod.PdfSummarizer), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -179,7 +179,7 @@ export default function StudentDashboardPage() {
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
     { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400' },
-    { name: 'Whiteboard', icon: Users, color: 'text-blue-400' },
+    { name: 'Whiteboard', icon: Spline, color: 'text-blue-400' },
   ];
 
   return (
