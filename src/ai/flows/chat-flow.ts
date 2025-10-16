@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { ChatRequestSchema, type ChatRequest, MessageDataSchema } from '@/lib/types';
+import { ChatRequestSchema, type ChatRequest, MessageDataSchema, type MessageData } from '@/lib/types';
 
 
 const tutorPrompt = ai.definePrompt(
@@ -36,7 +36,7 @@ export async function continueChat(request: ChatRequest): Promise<MessageData> {
   'use server';
 
   const { response } = await ai.generate({
-      prompt: tutorPrompt.prompt,
+      prompt: tutorPrompt,
       input: request,
       model: 'googleai/gemini-2.5-flash',
   });

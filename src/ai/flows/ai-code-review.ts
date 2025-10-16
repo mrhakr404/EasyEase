@@ -58,7 +58,7 @@ const aiCodeReviewFlow = ai.defineFlow(
   },
   async input => {
     const { response } = await ai.generate({
-        prompt: prompt.prompt,
+        prompt: prompt,
         input,
         model: 'googleai/gemini-2.5-flash',
     });
