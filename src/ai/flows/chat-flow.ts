@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview An AI-powered chat agent for students.
- * - streamChat - A streaming flow that powers the student AI chat.
+ * - streamChat - a streaming flow that powers the student AI chat.
  */
 
 import { ai } from '@/ai/genkit';
@@ -84,5 +84,6 @@ const chatFlow = ai.defineFlow(
 
 // Define the streaming chat function that the client will call
 export async function streamChat(input: ChatInput) {
-    return chatFlow.stream(input);
+    const { stream, response } = chatFlow.stream(input);
+    return { stream, response };
 }
