@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
 
 Language: {{{language}}}
 Code:
-```{{{code}}}```
+\`\`\`{{{code}}}\`\`\`
 
 Instructions: {{{instructions}}}
 
