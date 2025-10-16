@@ -15,6 +15,7 @@ import {
   deleteDoc,
   writeBatch,
   getDoc,
+  collectionGroup,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import type { Message, ChatSession } from '@/lib/types';
@@ -39,18 +40,7 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
     title: 'New Chat',
   };
 
-  try {
-    const sessionRef = await addDoc(sessionsCollectionRef, newSessionData);
-    
-    // Add the initial message
-    const initialMsgWithTimestamp = {
-        ...initialMessage,
-        timestamp: serverTimestamp(),
-    };
-    await addDoc(collection(firestore, messagesCol(userId, sessionRef.id)), initialMsgWithTimestamp);
-
-    return sessionRef.id;
-  } catch (error) {
+  const sessionRef = await addDoc(sessionsCollectionRef, newSessionData).catch((error) => {
     console.error('Error creating new chat session:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: sessionsCollectionRef.path,
@@ -58,7 +48,17 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
       requestResourceData: newSessionData,
     }));
     throw error;
-  }
+  });
+
+  // Add the initial message
+  const initialMsgWithTimestamp = {
+      ...initialMessage,
+      timestamp: serverTimestamp(),
+  };
+  
+  await addDoc(collection(firestore, messagesCol(userId, sessionRef.id)), initialMsgWithTimestamp);
+
+  return sessionRef.id;
 }
 
 /**
@@ -76,7 +76,6 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
 
   // Perform writes without awaiting to keep UI responsive
   setDoc(doc(messagesCollectionRef, id), messagePayload).catch(error => {
-    console.error('Error saving chat message:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: doc(messagesCollectionRef, id).path,
       operation: 'create',
@@ -85,7 +84,6 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
   });
 
   updateDoc(sessionRef, { updatedAt: serverTimestamp() }).catch(error => {
-    console.error('Error updating session timestamp:', error);
      errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: sessionRef.path,
       operation: 'update',
@@ -103,45 +101,46 @@ export async function loadChatSession(userId: string): Promise<ChatSession | nul
   const sessionsCollectionRef = collection(firestore, sessionsCol(userId));
   const q = query(sessionsCollectionRef, orderBy('updatedAt', 'desc'), limit(1));
 
-  try {
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return null;
-    }
-
-    const sessionDocSnap = querySnapshot.docs[0];
-    const sessionId = sessionDocSnap.id;
-
-    const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
-    const messagesQuery = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
-
-    const messagesSnapshot = await getDocs(messagesQuery);
-    const messages = messagesSnapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        ...data,
-        timestamp: (data.timestamp as Timestamp).toDate(),
-      } as Message;
-    });
-
-    return {
-      id: sessionId,
-      ...sessionDocSnap.data(),
-      messages,
-      createdAt: (sessionDocSnap.data().createdAt as Timestamp).toDate(),
-      updatedAt: (sessionDocSnap.data().updatedAt as Timestamp).toDate(),
-    } as ChatSession;
-
-  } catch (error) {
-    console.error('Error loading chat session:', error);
-    errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: sessionsCol(userId), // Path of the collection being queried
+  const querySnapshot = await getDocs(q).catch((error) => {
+    // This is the new, targeted error handling block.
+    const contextualError = new FirestorePermissionError({
+      path: sessionsCollectionRef.path, // Path of the collection being queried
       operation: 'list',
-    }));
+    });
+    errorEmitter.emit('permission-error', contextualError);
+    // We throw the error to stop execution and let the caller know it failed.
+    throw contextualError;
+  });
+
+  if (querySnapshot.empty) {
     return null;
   }
+
+  const sessionDocSnap = querySnapshot.docs[0];
+  const sessionId = sessionDocSnap.id;
+
+  const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
+  const messagesQuery = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
+
+  const messagesSnapshot = await getDocs(messagesQuery);
+  const messages = messagesSnapshot.docs.map(docSnap => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      ...data,
+      timestamp: (data.timestamp as Timestamp).toDate(),
+    } as Message;
+  });
+
+  return {
+    id: sessionId,
+    ...sessionDocSnap.data(),
+    messages,
+    createdAt: (sessionDocSnap.data().createdAt as Timestamp).toDate(),
+    updatedAt: (sessionDocSnap.data().updatedAt as Timestamp).toDate(),
+  } as ChatSession;
 }
+
 
 /**
  * Deletes a chat session and all its messages.
@@ -168,7 +167,6 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
 
     await batch.commit();
   } catch (error) {
-    console.error('Error deleting chat session:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: sessionRef.path,
       operation: 'delete',
