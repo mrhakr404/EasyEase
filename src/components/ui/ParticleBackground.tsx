@@ -17,8 +17,8 @@ export function ParticleBackground({
   clusterCount = 50,
   particleColor = '#FFFF80', // Soft yellow
   clusterColor = '#FFD700', // Gold
-  baseSpeed = 0.05,
-  clusterSpeed = 0.1,
+  baseSpeed = 0.1,
+  clusterSpeed = 0.2,
 }: ParticleBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const mouse = useRef({ x: 0, y: 0 });
