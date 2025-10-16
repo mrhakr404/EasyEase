@@ -23,11 +23,11 @@ export function ChatInterface() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isGenerating = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -39,30 +39,40 @@ export function ChatInterface() {
     const initializeChat = async () => {
       if (user) {
         setIsLoading(true);
-        const latestSession = await loadChatSession(user.uid);
-        if (latestSession) {
-          setMessages(latestSession.messages);
-          setSessionId(latestSession.id);
-        } else {
-          const newSessionId = await createNewChatSession(user.uid, {
-            role: 'assistant',
-            content: 'Hi there! How can I help you today?',
-          });
-          setSessionId(newSessionId);
-          setMessages([
-            {
-              id: 'initial',
+        try {
+          const latestSession = await loadChatSession(user.uid);
+          if (latestSession) {
+            setMessages(latestSession.messages);
+            setSessionId(latestSession.id);
+          } else {
+            const newSessionId = await createNewChatSession(user.uid, {
               role: 'assistant',
               content: 'Hi there! How can I help you today?',
-              timestamp: new Date(),
-            },
-          ]);
+            });
+            setSessionId(newSessionId);
+            setMessages([
+              {
+                id: 'initial',
+                role: 'assistant',
+                content: 'Hi there! How can I help you today?',
+                timestamp: new Date(),
+              },
+            ]);
+          }
+        } catch (error) {
+            console.error("Failed to initialize chat:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Could not load chat',
+                description: 'Please refresh the page to try again.'
+            })
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
       }
     };
     initializeChat();
-  }, [user]);
+  }, [user, toast]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,19 +87,18 @@ export function ChatInterface() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setIsLoading(true);
-    isGenerating.current = true;
+    setIsGenerating(true);
 
     await saveChatMessage(user.uid, sessionId, userMessage);
 
-    const aiMessage: Message = {
+    const aiMessagePlaceholder: Message = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
       content: '',
       timestamp: new Date(),
       isStreaming: true,
     };
-    setMessages((prev) => [...prev, aiMessage]);
+    setMessages((prev) => [...prev, aiMessagePlaceholder]);
 
     try {
       const history = messages.map((msg) => ({
@@ -99,53 +108,60 @@ export function ChatInterface() {
 
       const responseText = await streamChat({ history, message: input });
       
-      // Check if a chat clear was requested while waiting
-      if (!isGenerating.current) return;
-
-      const finalAiMessage = {
-          ...aiMessage,
+      const finalAiMessage: Message = {
+          ...aiMessagePlaceholder,
           content: responseText,
           isStreaming: false,
       };
 
       setMessages((prev) =>
-        prev.map((msg) => (msg.id === aiMessage.id ? finalAiMessage : msg))
+        prev.map((msg) => (msg.id === aiMessagePlaceholder.id ? finalAiMessage : msg))
       );
 
       await saveChatMessage(user.uid, sessionId, finalAiMessage);
 
     } catch (error) {
       console.error('Error streaming chat:', error);
-      // Check if a chat clear was requested while waiting
-      if (!isGenerating.current) return;
-
-      const errorMessage = {
-          ...aiMessage,
+      const errorMessage: Message = {
+          ...aiMessagePlaceholder,
           content: 'Sorry, I ran into an error. Please try again.',
           isStreaming: false,
           error: true,
       };
-      setMessages(prev => prev.map(msg => msg.id === aiMessage.id ? errorMessage : msg));
+      setMessages(prev => prev.map(msg => msg.id === aiMessagePlaceholder.id ? errorMessage : msg));
       toast({
         variant: 'destructive',
         title: 'An error occurred',
         description: 'Failed to get a response from the AI.',
       });
     } finally {
-      setIsLoading(false);
-      isGenerating.current = false;
+      setIsGenerating(false);
     }
   };
   
   const handleClearChat = async () => {
-    if (!user || !sessionId) return;
+    if (!user || !sessionId || isGenerating) return;
+    
     setIsLoading(true);
-    isGenerating.current = false; // Stop any ongoing generation from updating state
-
     try {
         await deleteChatSession(user.uid, sessionId);
-        const newSessionId = await createNew_chat_session(user.uid);
+        const newSessionId = await createNewChatSession(user.uid, {
+            role: 'assistant',
+            content: 'Hi there! How can I help you now?',
+        });
         setSessionId(newSessionId);
+        setMessages([
+            {
+                id: 'initial-cleared',
+                role: 'assistant',
+                content: 'Chat cleared. How can I help you now?',
+                timestamp: new Date(),
+            },
+        ]);
+        toast({
+            title: "Chat cleared",
+            description: "Your conversation history has been deleted."
+        })
     } catch(error) {
         console.error("Error clearing chat", error);
         toast({
@@ -158,22 +174,6 @@ export function ChatInterface() {
     }
   };
 
-  async function createNew_chat_session(userId: string) {
-    const newSessionId = await createNewChatSession(userId, {
-        role: 'assistant',
-        content: 'Hi there! How can I help you today?',
-    });
-    setMessages([
-        {
-            id: 'initial',
-            role: 'assistant',
-            content: 'Chat cleared. How can I help you now?',
-            timestamp: new Date(),
-        },
-    ]);
-    return newSessionId;
-}
-
   return (
     <Card className="h-full w-full flex flex-col bg-transparent border-0 shadow-none">
       <header className="flex items-center justify-between p-4 border-b">
@@ -181,24 +181,30 @@ export function ChatInterface() {
             <Bot className="w-7 h-7 text-primary" />
             <h1 className="text-xl font-bold font-headline">AI Learning Assistant</h1>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={isLoading}>
+        <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={isLoading || isGenerating}>
             <Trash2 className="w-5 h-5" />
             <span className="sr-only">Clear Chat</span>
         </Button>
       </header>
       
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} message={msg} />
-        ))}
-        {isLoading && messages[messages.length-1]?.role === 'user' && <TypingIndicator />}
+        {isLoading && !messages.length ? (
+            <div className="flex justify-center items-center h-full">
+                <TypingIndicator />
+            </div>
+        ) : (
+            messages.map((msg) => (
+                <ChatMessage key={msg.id} message={msg} />
+            ))
+        )}
+        {isGenerating && <TypingIndicator />}
       </CardContent>
 
       <ChatInput
         input={input}
         setInput={setInput}
         handleSendMessage={handleSendMessage}
-        isLoading={isLoading}
+        isLoading={isGenerating}
       />
     </Card>
   );

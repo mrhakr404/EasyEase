@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview An AI-powered chat agent for students.
- * - streamChat - a streaming flow that powers the student AI chat.
+ * - streamChat - a flow that powers the student AI chat.
  */
 
 import { ai } from '@/ai/genkit';
@@ -47,9 +47,8 @@ const chatFlow = ai.defineFlow(
     name: 'chatFlow',
     inputSchema: ChatInputSchema,
     outputSchema: z.string(),
-    streamSchema: z.string(),
   },
-  async (input, { sendChunk }) => {
+  async (input) => {
     const { history, message } = input;
 
     // The last message in the history is the user's new prompt
@@ -58,8 +57,8 @@ const chatFlow = ai.defineFlow(
       { role: 'user' as const, content: message },
     ];
 
-    // Generate the response using a streaming model
-    const { stream, response } = ai.generateStream({
+    // Generate the response
+    const llmResponse = await ai.generate({
       prompt: {
         system: systemPrompt,
         history: fullHistory,
@@ -70,14 +69,7 @@ const chatFlow = ai.defineFlow(
       },
     });
 
-    let fullResponse = '';
-    for await (const chunk of stream) {
-      const textChunk = chunk.text;
-      fullResponse += textChunk;
-      sendChunk(textChunk);
-    }
-    
-    return fullResponse;
+    return llmResponse.text;
   }
 );
 

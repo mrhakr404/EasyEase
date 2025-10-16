@@ -5,6 +5,7 @@ import {
   doc,
   addDoc,
   setDoc,
+  updateDoc,
   getDocs,
   query,
   orderBy,
@@ -13,6 +14,7 @@ import {
   serverTimestamp,
   deleteDoc,
   writeBatch,
+  getDoc,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import type { Message, ChatSession } from '@/lib/types';
@@ -23,7 +25,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 const sessionsCol = (userId: string) => `userProfiles/${userId}/chatSessions`;
 const sessionDoc = (userId: string, sessionId: string) => doc(firestore, sessionsCol(userId), sessionId);
 const messagesCol = (userId: string, sessionId: string) => `userProfiles/${userId}/chatSessions/${sessionId}/messages`;
-const messageDoc = (userId: string, sessionId: string, messageId: string) => doc(firestore, messagesCol(userId, sessionId), messageId);
 
 /**
  * Creates a new chat session for a user.
@@ -61,9 +62,9 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
 }
 
 /**
- * Saves a single chat message to a session.
+ * Saves a single chat message to a session. This is a non-blocking write.
  */
-export async function saveChatMessage(userId: string, sessionId: string, message: Message): Promise<void> {
+export function saveChatMessage(userId: string, sessionId: string, message: Message): Promise<void> {
   const { id, ...messageData } = message;
   const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
   const sessionRef = sessionDoc(userId, sessionId);
@@ -73,22 +74,26 @@ export async function saveChatMessage(userId: string, sessionId: string, message
       timestamp: Timestamp.fromDate(new Date(message.timestamp)),
   };
 
-  try {
-    // Non-blocking write
-    setDoc(doc(messagesCollectionRef, id), messagePayload).catch(err => { throw err });
-
-    // Update session's `updatedAt` timestamp
-    updateDoc(sessionRef, { updatedAt: serverTimestamp() }).catch(err => { throw err });
-
-  } catch (error) {
+  // Perform writes without awaiting to keep UI responsive
+  setDoc(doc(messagesCollectionRef, id), messagePayload).catch(error => {
     console.error('Error saving chat message:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: messagesCollectionRef.path,
+      path: doc(messagesCollectionRef, id).path,
       operation: 'create',
       requestResourceData: messagePayload,
     }));
-    throw error;
-  }
+  });
+
+  updateDoc(sessionRef, { updatedAt: serverTimestamp() }).catch(error => {
+    console.error('Error updating session timestamp:', error);
+     errorEmitter.emit('permission-error', new FirestorePermissionError({
+      path: sessionRef.path,
+      operation: 'update',
+      requestResourceData: { updatedAt: 'serverTimestamp' },
+    }));
+  });
+
+  return Promise.resolve();
 }
 
 /**
@@ -131,7 +136,7 @@ export async function loadChatSession(userId: string): Promise<ChatSession | nul
   } catch (error) {
     console.error('Error loading chat session:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: q.toString(),
+      path: sessionsCol(userId), // Path of the collection being queried
       operation: 'list',
     }));
     return null;
@@ -146,6 +151,13 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
   const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
 
   try {
+    // Check if session exists before trying to delete
+    const sessionSnap = await getDoc(sessionRef);
+    if (!sessionSnap.exists()) {
+        console.warn("Attempted to delete a non-existent chat session.");
+        return;
+    }
+
     const messagesSnapshot = await getDocs(messagesCollectionRef);
     const batch = writeBatch(firestore);
 
