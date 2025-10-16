@@ -95,21 +95,11 @@ export function ChatInterface() {
         content: msg.content,
       }));
 
-      const { stream } = await streamChat({ history, message: input });
+      const responseText = await streamChat({ history, message: input });
 
-      let streamedContent = '';
-      for await (const chunk of stream) {
-        streamedContent += chunk;
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === aiMessage.id ? { ...msg, content: streamedContent } : msg
-          )
-        );
-      }
-      
       const finalAiMessage = {
           ...aiMessage,
-          content: streamedContent,
+          content: responseText,
           isStreaming: false,
       };
 

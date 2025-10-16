@@ -59,7 +59,7 @@ const chatFlow = ai.defineFlow(
     ];
 
     // Generate the response using a streaming model
-    const { stream } = ai.generateStream({
+    const { stream, response } = ai.generateStream({
       prompt: {
         system: systemPrompt,
         history: fullHistory,
@@ -83,7 +83,7 @@ const chatFlow = ai.defineFlow(
 
 
 // Define the streaming chat function that the client will call
-export async function streamChat(input: ChatInput) {
-    const { stream, response } = chatFlow.stream(input);
-    return { stream, response };
+export async function streamChat(input: ChatInput): Promise<string> {
+    const response = await chatFlow(input);
+    return response;
 }
