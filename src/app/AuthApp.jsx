@@ -7,7 +7,7 @@ import {
   initiateEmailSignIn 
 } from '@/firebase/non-blocking-login';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 
 
 // --- Helper Functions & SVGs ---
@@ -139,7 +139,7 @@ const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessa
           return {
             title: 'Create Account',
             subtitle: 'Get started with a new account',
-            content: <SignUpForm auth={auth} db={db} setError={setError} />,
+            content: <SignUpForm auth={auth} db={db} setError={setError} setSuccessMessage={setSuccessMessage} setAuthView={setAuthView} />,
             footer: (
               <button
                 onClick={() => { setAuthView('login'); resetMessages(); }}
@@ -301,7 +301,7 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
     );
 };
 
-const SignUpForm = ({ auth, db, setError }) => {
+const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -312,6 +312,7 @@ const SignUpForm = ({ auth, db, setError }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
         if (password !== confirmPassword) {
             setError("Passwords do not match.");
             return;
@@ -327,6 +328,8 @@ const SignUpForm = ({ auth, db, setError }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            await sendEmailVerification(user);
+
             // Save user profile to Firestore
             const userProfileRef = doc(db, 'userProfiles', user.uid);
             await setDoc(userProfileRef, {
@@ -338,12 +341,23 @@ const SignUpForm = ({ auth, db, setError }) => {
                 role: role,
                 createdAt: serverTimestamp(),
             });
-            // onAuthStateChanged will handle navigation to dashboard
+            
+            setSuccessMessage('Sign up successful! A verification link has been sent to your email.');
+            setIsLoading(false);
+            
+            // Sign out the user immediately so they have to verify first
+            if (auth) await auth.signOut();
+
+            // Switch to login view after a short delay
+            setTimeout(() => {
+                setAuthView('login');
+            }, 3000);
+
+
         } catch (err) {
             setError(err.message.replace('Firebase: ', ''));
             setIsLoading(false);
         }
-        // Don't set isLoading to false on success, as the component will unmount
     };
     
     return (
@@ -497,5 +511,7 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
 
     
