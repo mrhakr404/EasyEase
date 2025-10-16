@@ -116,6 +116,11 @@ export const MessageDataSchema = z.object({
 });
 export type MessageData = z.infer<typeof MessageDataSchema>;
 
+export const ChatRequestSchema = z.object({
+  history: z.array(MessageDataSchema),
+});
+export type ChatRequest = z.infer<typeof ChatRequestSchema>;
+
 export interface ChatMessage extends MessageData {
   id: string;
   createdAt: Timestamp;

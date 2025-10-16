@@ -5,13 +5,9 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-import { MessageDataSchema } from '@/lib/types';
+import { z } from 'zod';
+import { ChatRequestSchema, type ChatRequest } from '@/lib/types';
 
-export const ChatRequestSchema = z.object({
-  history: z.array(MessageDataSchema),
-});
-export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 
 const prompt = ai.definePrompt(
   {
