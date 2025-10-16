@@ -60,7 +60,7 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
   
   await addDoc(collection(firestore, messagesCol(userId, sessionRef.id)), initialMsgWithTimestamp).catch((error) => {
     errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: `userProfiles/${userId}/chatSessions/${sessionRef.id}/messages`,
+        path: messagesCol(userId, sessionRef.id),
         operation: 'create',
         requestResourceData: initialMsgWithTimestamp
     }));
@@ -108,7 +108,7 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
 /**
  * A helper function to safely execute a getDocs query and handle permissions errors.
  */
-async function safeGetDocs(q: Query | CollectionReference) {
+async function safeGetDocs(q: Query<DocumentData> | CollectionReference<DocumentData>) {
     try {
         return await getDocs(q);
     } catch (error) {
@@ -170,14 +170,12 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
     const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
 
     try {
-        // First, check if the session document exists to avoid unnecessary reads on messages.
         const sessionSnap = await getDoc(sessionRef).catch(error => {
-            // This catch block handles permission errors for the getDoc call itself.
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: sessionRef.path,
                 operation: 'get',
             }));
-            throw error; // Re-throw to exit the function.
+            throw error;
         });
 
         if (!sessionSnap.exists()) {
@@ -185,7 +183,6 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
             return;
         }
 
-        // Now, get all messages to delete them in a batch.
         const messagesSnapshot = await safeGetDocs(messagesCollectionRef);
 
         const batch = writeBatch(firestore);
@@ -196,21 +193,16 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
 
         batch.delete(sessionRef);
 
-        // Await the commit and handle its specific error.
         await batch.commit().catch(error => {
-            // If the batch fails, it's a 'write' operation failure.
-            // We'll attribute it to the session path for a clear error message.
             errorEmitter.emit('permission-error', new FirestorePermissionError({
                 path: sessionRef.path,
-                operation: 'delete', // A batch delete is a type of 'delete' operation.
+                operation: 'delete',
             }));
-            throw error; // Re-throw to let the caller know it failed.
+            throw error;
         });
 
     } catch (error) {
-        // This outer catch will handle errors re-thrown from the inner blocks.
         console.error("Failed to delete chat session:", error);
-        // We re-throw so the UI layer can handle the failed state.
         throw error;
     }
 }
