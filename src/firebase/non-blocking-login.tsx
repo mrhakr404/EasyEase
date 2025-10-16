@@ -8,22 +8,10 @@ import {
 } from 'firebase/auth';
 
 /**
- * Initiates email/password sign-up (non-blocking).
- * It returns the promise from createUserWithEmailAndPassword so the caller can handle the user credential.
- * Errors should be caught by the caller.
+ * DEPRECATED: This file is no longer in use.
+ * The authentication logic has been moved directly into the AuthApp.jsx component
+ * for better clarity and state management.
  */
-export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
-  return createUserWithEmailAndPassword(authInstance, email, password);
-}
-
-/**
- * Initiates email/password sign-in (non-blocking).
- * It returns the promise from signInWithEmailAndPassword. The redirection and global state update
- * should be handled by the onAuthStateChanged listener in AuthContext.
- * Errors should be caught by the caller.
- */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
-  return signInWithEmailAndPassword(authInstance, email, password);
-}
+    
 
     

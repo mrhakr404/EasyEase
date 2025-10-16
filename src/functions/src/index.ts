@@ -24,7 +24,7 @@ export const createProfile = onUserCreate(async (event) => {
 
   const userProfile = {
     id: uid,
-    email,
+    email: email || "",
     firstName: displayName?.split(" ")[0] || "",
     lastName: displayName?.split(" ").slice(1).join(" ") || "",
     photoURL: photoURL || "",
@@ -43,3 +43,5 @@ export const createProfile = onUserCreate(async (event) => {
     return null;
   }
 });
+
+    

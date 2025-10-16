@@ -2,9 +2,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
-import { sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
-import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { useAuth as useFirebaseAuth } from '@/firebase';
+import { 
+    sendPasswordResetEmail, 
+    sendEmailVerification,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword 
+} from 'firebase/auth';
 
 // --- Helper Functions & SVGs ---
 
@@ -143,6 +147,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         let message = 'An unexpected error occurred.';
         switch (err.code) {
             case 'auth/user-not-found':
+            case 'auth/invalid-credential':
             case 'auth/invalid-email':
                 message = 'No account found with that email address.';
                 break;
@@ -168,11 +173,14 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         }
         setIsLoading(true);
         
-        initiateEmailSignIn(auth, email, password)
-            .catch(handleAuthError)
-            .finally(() => {
-                 setIsLoading(false);
-            });
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // AuthContext will handle redirection
+        } catch (err) {
+            handleAuthError(err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -229,6 +237,25 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const handleAuthError = (err) => {
+        let message = 'An unexpected error occurred.';
+        switch (err.code) {
+            case 'auth/email-already-in-use':
+                message = 'This email is already associated with an account.';
+                break;
+            case 'auth/weak-password':
+                message = 'Password should be at least 6 characters long.';
+                break;
+            case 'auth/invalid-email':
+                message = 'Please enter a valid email address.';
+                break;
+            default:
+                message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+                break;
+        }
+        setError(message);
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -250,13 +277,12 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         setIsLoading(true);
 
         try {
-            const userCredential = await initiateEmailSignUp(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await sendEmailVerification(userCredential.user);
-            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
-            // AuthContext will handle redirecting to the dashboard after profile creation.
+            setSuccessMessage('Sign up successful! Please check your email to verify your account. You will be redirected shortly.');
+            // AuthContext will handle redirecting to the dashboard after the backend function creates the profile.
         } catch (err) {
-            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-            setError(message);
+            handleAuthError(err);
         } finally {
             setIsLoading(false);
         }
@@ -329,8 +355,9 @@ const ForgotPasswordForm = ({ setError, setSuccessMessage }) => {
         } catch (err) {
             const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
             setError(message);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     return (
@@ -396,3 +423,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
