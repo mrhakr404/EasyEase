@@ -24,7 +24,11 @@ export default function InstituteDashboardPage() {
     { name: 'Analytics', icon: BarChart3, color: 'text-rose-400' },
     { name: 'Settings', icon: Settings, color: 'text-slate-400' },
   ];
-  const [activeComponent, setActiveComponent] = React.useState('Overview');
+  const [activeComponent, setActiveComponent] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    setActiveComponent('Overview');
+  }, []);
   
   const renderContent = () => {
     switch (activeComponent) {
@@ -33,7 +37,6 @@ export default function InstituteDashboardPage() {
       case 'Course Management':
         return <CourseManagement />;
       case 'Overview':
-      default:
         return (
           <div className="animate-fade-in">
              <h1 className="text-3xl font-bold mb-8 font-headline">Institute Dashboard</h1>
@@ -114,6 +117,19 @@ export default function InstituteDashboardPage() {
                   </Table>
                 </CardContent>
               </Card>
+          </div>
+        );
+      default:
+        // Render skeletons or a loading indicator while the component is mounting
+        return (
+          <div className="space-y-8">
+            <Skeleton className="h-10 w-1/3" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-36 w-full" />
+            </div>
+            <Skeleton className="h-64 w-full" />
           </div>
         );
     }
