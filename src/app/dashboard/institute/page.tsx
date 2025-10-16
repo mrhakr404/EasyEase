@@ -8,6 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { UserProfile } from '@/components/ui/user-profile';
 import { cn } from '@/lib/utils';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 export default function InstituteDashboardPage() {
@@ -21,6 +25,97 @@ export default function InstituteDashboardPage() {
   ];
   const [activeComponent, setActiveComponent] = React.useState('Overview');
   
+  const renderContent = () => {
+    switch (activeComponent) {
+      case 'Settings':
+        return <ProfileSettings />;
+      case 'Overview':
+      default:
+        return (
+          <div className="animate-fade-in">
+             <h1 className="text-3xl font-bold mb-8 font-headline">Institute Dashboard</h1>
+              {/* SECURITY NOTE: All critical write actions (e.g., creating courses, enrolling students)
+                  must be validated on the server-side via Firebase Callable Functions to ensure
+                  the user has the 'institute' role and proper permissions. Client-side checks are for UI only.
+              */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                  <CardHeader>
+                    <CardTitle>Total Courses</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-4xl font-bold">12</p>
+                    <p className="text-sm text-muted-foreground">Active Courses</p>
+                  </CardContent>
+                </Card>
+                <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                  <CardHeader>
+                    <CardTitle>Total Students</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-4xl font-bold">452</p>
+                    <p className="text-sm text-muted-foreground">Enrolled</p>
+                  </CardContent>
+                </Card>
+                 <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                  <CardHeader>
+                    <CardTitle>Analytics</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">Generate and view key reports.</p>
+                    <Button>Generate Monthly Report</Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="transition-all duration-300 hover:shadow-lg">
+                <CardHeader>
+                  <CardTitle>Course Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Course Name</TableHead>
+                        <TableHead>Enrolled</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>Advanced React</TableCell>
+                        <TableCell>78</TableCell>
+                        <TableCell>Active</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm">Edit</Button>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>Intro to AI</TableCell>
+                        <TableCell>120</TableCell>
+                        <TableCell>Active</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm">Edit</Button>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>UX Design Fundamentals</TableCell>
+                        <TableCell>55</TableCell>
+                        <TableCell>Draft</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm">Edit</Button>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+          </div>
+        );
+    }
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -47,89 +142,12 @@ export default function InstituteDashboardPage() {
         </SidebarContent>
         <SidebarFooter>
           <SidebarSeparator />
-          <UserProfile />
+          <UserProfile onProfileClick={() => setActiveComponent('Settings')} />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className="p-8 animate-fade-in">
-          <h1 className="text-3xl font-bold mb-8 font-headline">Institute Dashboard</h1>
-          {/* SECURITY NOTE: All critical write actions (e.g., creating courses, enrolling students)
-              must be validated on the server-side via Firebase Callable Functions to ensure
-              the user has the 'institute' role and proper permissions. Client-side checks are for UI only.
-          */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle>Total Courses</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold">12</p>
-                <p className="text-sm text-muted-foreground">Active Courses</p>
-              </CardContent>
-            </Card>
-            <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle>Total Students</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-bold">452</p>
-                <p className="text-sm text-muted-foreground">Enrolled</p>
-              </CardContent>
-            </Card>
-             <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <CardHeader>
-                <CardTitle>Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Generate and view key reports.</p>
-                <Button>Generate Monthly Report</Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="transition-all duration-300 hover:shadow-lg">
-            <CardHeader>
-              <CardTitle>Course Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Course Name</TableHead>
-                    <TableHead>Enrolled</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Advanced React</TableCell>
-                    <TableCell>78</TableCell>
-                    <TableCell>Active</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Intro to AI</TableCell>
-                    <TableCell>120</TableCell>
-                    <TableCell>Active</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>UX Design Fundamentals</TableCell>
-                    <TableCell>55</TableCell>
-                    <TableCell>Draft</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Edit</Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+        <main className="p-8 animate-fade-in" data-main-scroll>
+          {renderContent()}
         </main>
       </SidebarInset>
     </SidebarProvider>

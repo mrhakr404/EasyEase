@@ -18,13 +18,13 @@ import { Skeleton } from './skeleton';
 function getInitials(name?: string | null) {
   if (!name) return 'U';
   const names = name.split(' ');
-  if (names.length > 1) {
+  if (names.length > 1 && names[names.length - 1]) {
     return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
   }
   return names[0][0].toUpperCase();
 }
 
-export function UserProfile() {
+export function UserProfile({ onProfileClick }: { onProfileClick?: () => void }) {
   const { user, loading } = useAppAuth();
   const auth = useAuth();
 
@@ -51,7 +51,7 @@ export function UserProfile() {
   }
 
   const displayName = user.displayName || user.email;
-  const initials = getInitials(displayName);
+  const initials = getInitials(user.displayName || user.email || undefined);
 
   return (
     <DropdownMenu>
@@ -83,7 +83,7 @@ export function UserProfile() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={onProfileClick}>
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>

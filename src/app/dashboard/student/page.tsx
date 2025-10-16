@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -25,6 +25,7 @@ const Whiteboard = dynamic(() => import('@/components/dashboard/Whiteboard').the
 const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer').then(mod => mod.PdfSummarizer), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -165,6 +166,8 @@ export default function StudentDashboardPage() {
             return <AiTutor />;
         case 'Whiteboard':
             return <Whiteboard />;
+        case 'Settings':
+            return <ProfileSettings />;
         case 'Overview':
         default:
             return <Overview setActiveComponent={setActiveComponent}/>;
@@ -180,6 +183,7 @@ export default function StudentDashboardPage() {
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
     { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400' },
     { name: 'Whiteboard', icon: Spline, color: 'text-blue-400' },
+    { name: 'Settings', icon: Settings, color: 'text-slate-400' },
   ];
 
   return (
@@ -209,7 +213,7 @@ export default function StudentDashboardPage() {
         </SidebarContent>
          <SidebarFooter>
           <SidebarSeparator />
-          <UserProfile />
+          <UserProfile onProfileClick={() => setActiveComponent('Settings')} />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
