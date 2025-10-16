@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
 import { LearningPath } from '@/components/dashboard/LearningPath';
+import { ChatInterface } from '@/components/chat/ChatInterface';
 import Link from 'next/link';
 
 
@@ -84,6 +85,8 @@ export default function StudentDashboardPage() {
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
+        case 'AI Chat':
+            return <ChatInterface />;
         case 'Overview':
         default:
             return <Overview />;
@@ -91,13 +94,13 @@ export default function StudentDashboardPage() {
   };
 
   const menuItems = [
-    { name: 'Overview', icon: LayoutDashboard, href: '#', external: false },
-    { name: 'Notes', icon: NotebookText, href: '#', external: false },
-    { name: 'AI Chat', icon: BotMessageSquare, href: '/dashboard/student/ai-chat', external: true },
-    { name: 'Learning Path', icon: Route, href: '#', external: false },
-    { name: 'AR/VR Labs', icon: BrainCircuit, href: '#', external: false },
-    { name: 'Whiteboard', icon: Users, href: '#', external: false },
-    { name: 'Code Companion', icon: BotMessageSquare, href: '#', external: false },
+    { name: 'Overview', icon: LayoutDashboard },
+    { name: 'Notes', icon: NotebookText },
+    { name: 'AI Chat', icon: BotMessageSquare },
+    { name: 'Learning Path', icon: Route },
+    { name: 'AR/VR Labs', icon: BrainCircuit },
+    { name 'Whiteboard', icon: Users },
+    { name: 'Code Companion', icon: BotMessageSquare },
   ];
 
   return (
@@ -113,24 +116,13 @@ export default function StudentDashboardPage() {
           <SidebarMenu>
             {menuItems.map(item => (
                 <SidebarMenuItem key={item.name}>
-                    {item.external ? (
-                       <Link href={item.href} className="w-full">
-                         <SidebarMenuButton 
-                            isActive={activeComponent === item.name}
-                            >
-                            <item.icon />
-                            {item.name}
-                        </SidebarMenuButton>
-                       </Link>
-                    ) : (
-                         <SidebarMenuButton 
-                            isActive={activeComponent === item.name}
-                            onClick={() => setActiveComponent(item.name)}
-                        >
-                            <item.icon />
-                            {item.name}
-                        </SidebarMenuButton>
-                    )}
+                    <SidebarMenuButton 
+                        isActive={activeComponent === item.name}
+                        onClick={() => setActiveComponent(item.name)}
+                    >
+                        <item.icon />
+                        {item.name}
+                    </SidebarMenuButton>
                 </SidebarMenuItem>
             ))}
           </SidebarMenu>
