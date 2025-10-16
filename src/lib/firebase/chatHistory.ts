@@ -16,6 +16,8 @@ import {
   writeBatch,
   getDoc,
   collectionGroup,
+  CollectionReference,
+  DocumentData,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import type { Message, ChatSession } from '@/lib/types';
@@ -25,7 +27,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 // Path builders
 const sessionsCol = (userId: string) => `userProfiles/${userId}/chatSessions`;
 const sessionDoc = (userId: string, sessionId: string) => doc(firestore, sessionsCol(userId), sessionId);
-const messagesCol = (userId: string, sessionId: string) => `userProfiles/${userId}/chatSessions/${sessionId}/messages`;
+const messagesCol = (userId:string, sessionId: string) => `userProfiles/${userId}/chatSessions/${sessionId}/messages`;
 
 /**
  * Creates a new chat session for a user.
@@ -41,7 +43,6 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
   };
 
   const sessionRef = await addDoc(sessionsCollectionRef, newSessionData).catch((error) => {
-    console.error('Error creating new chat session:', error);
     errorEmitter.emit('permission-error', new FirestorePermissionError({
       path: sessionsCollectionRef.path,
       operation: 'create',
@@ -56,7 +57,15 @@ export async function createNewChatSession(userId: string, initialMessage: Omit<
       timestamp: serverTimestamp(),
   };
   
-  await addDoc(collection(firestore, messagesCol(userId, sessionRef.id)), initialMsgWithTimestamp);
+  await addDoc(collection(firestore, messagesCol(userId, sessionRef.id)), initialMsgWithTimestamp).catch((error) => {
+    errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: `userProfiles/${userId}/chatSessions/${sessionRef.id}/messages`,
+        operation: 'create',
+        requestResourceData: initialMsgWithTimestamp
+    }));
+    throw error;
+  });
+
 
   return sessionRef.id;
 }
@@ -95,22 +104,29 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
 }
 
 /**
+ * A helper function to safely execute a getDocs query and handle permissions errors.
+ */
+async function safeGetDocs<T extends DocumentData>(q: CollectionReference<T>) {
+    try {
+        return await getDocs(q);
+    } catch (error) {
+        const contextualError = new FirestorePermissionError({
+            path: q.path,
+            operation: 'list',
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        throw contextualError;
+    }
+}
+
+/**
  * Loads the most recent chat session for a user.
  */
 export async function loadChatSession(userId: string): Promise<ChatSession | null> {
   const sessionsCollectionRef = collection(firestore, sessionsCol(userId));
   const q = query(sessionsCollectionRef, orderBy('updatedAt', 'desc'), limit(1));
 
-  const querySnapshot = await getDocs(q).catch((error) => {
-    // This is the new, targeted error handling block.
-    const contextualError = new FirestorePermissionError({
-      path: sessionsCollectionRef.path, // Path of the collection being queried
-      operation: 'list',
-    });
-    errorEmitter.emit('permission-error', contextualError);
-    // We throw the error to stop execution and let the caller know it failed.
-    throw contextualError;
-  });
+  const querySnapshot = await safeGetDocs(q);
 
   if (querySnapshot.empty) {
     return null;
@@ -122,7 +138,7 @@ export async function loadChatSession(userId: string): Promise<ChatSession | nul
   const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
   const messagesQuery = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
-  const messagesSnapshot = await getDocs(messagesQuery);
+  const messagesSnapshot = await safeGetDocs(messagesQuery as CollectionReference<DocumentData>);
   const messages = messagesSnapshot.docs.map(docSnap => {
     const data = docSnap.data();
     return {
@@ -146,31 +162,33 @@ export async function loadChatSession(userId: string): Promise<ChatSession | nul
  * Deletes a chat session and all its messages.
  */
 export async function deleteChatSession(userId: string, sessionId: string): Promise<void> {
-  const sessionRef = sessionDoc(userId, sessionId);
-  const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
+    const sessionRef = sessionDoc(userId, sessionId);
+    const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
 
-  try {
-    // Check if session exists before trying to delete
-    const sessionSnap = await getDoc(sessionRef);
-    if (!sessionSnap.exists()) {
-        console.warn("Attempted to delete a non-existent chat session.");
-        return;
+    try {
+        const sessionSnap = await getDoc(sessionRef);
+        if (!sessionSnap.exists()) {
+            console.warn("Attempted to delete a non-existent chat session.");
+            return;
+        }
+
+        const messagesSnapshot = await getDocs(messagesCollectionRef);
+        const batch = writeBatch(firestore);
+
+        messagesSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        batch.delete(sessionRef);
+
+        await batch.commit();
+    } catch (error) {
+        // This single catch block will handle errors from getDoc, getDocs, or commit.
+        // We will create a general "write" (batch) error but point to the session path.
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: sessionRef.path,
+            operation: 'delete', // A batch delete is a type of 'delete' operation.
+        }));
+        // Re-throw the error so the UI can know the operation failed.
+        throw error;
     }
-
-    const messagesSnapshot = await getDocs(messagesCollectionRef);
-    const batch = writeBatch(firestore);
-
-    messagesSnapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    batch.delete(sessionRef);
-
-    await batch.commit();
-  } catch (error) {
-    errorEmitter.emit('permission-error', new FirestorePermissionError({
-      path: sessionRef.path,
-      operation: 'delete',
-    }));
-    throw error;
-  }
 }
