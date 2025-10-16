@@ -37,9 +37,8 @@ export interface Course {
   id: string;
   instituteId: string;
   title: string;
-  slug: string;
   description: string;
-  modules: string[]; // Array of module IDs
+  studentIds: string[];
   published: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
