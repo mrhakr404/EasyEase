@@ -3,9 +3,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, firestore } from '@/lib/firebase/client';
-
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  sendPasswordResetEmail, 
+  sendEmailVerification, 
+  signInWithEmailAndPassword 
+} from 'firebase/auth';
 
 // --- Helper Functions & SVGs ---
 
@@ -134,6 +138,7 @@ export default function AuthApp({ initialView = 'login' }) {
 // --- Form Components ---
 
 const LoginForm = ({ setError, onForgotPasswordClick }) => {
+    const auth = useFirebaseAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -142,7 +147,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!email || !password) {
+        if (!email || !password || !auth) {
             setError('Please fill in all fields.');
             return;
         }
@@ -153,7 +158,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
             // On success, the AuthProvider's onAuthStateChanged listener 
             // will handle the redirection.
         } catch (err) {
-            const message = err.message ? err.message.replace('Firebase: ', '').replace('auth/invalid-credential', 'Invalid email or password.') : 'An unexpected error occurred.';
+            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
             setError(message);
             setIsLoading(false);
         }
@@ -207,6 +212,8 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
 };
 
 const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
+    const auth = useFirebaseAuth();
+    const firestore = useFirestore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -218,6 +225,11 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         e.preventDefault();
         setError('');
         setSuccessMessage('');
+
+        if (!auth || !firestore) {
+            setError("Auth service not available. Please try again later.");
+            return;
+        }
         if (password !== confirmPassword) {
             setError("Passwords do not match.");
             return;
@@ -247,11 +259,11 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 createdAt: serverTimestamp(),
             });
             
-            setSuccessMessage('Sign up successful! Please check your email to verify your account. You can close this window.');
+            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
             setIsLoading(false);
             
             // Sign out the user immediately so they have to verify first
-            if (auth) await auth.signOut();
+            await auth.signOut();
 
             // Switch to login view after a short delay
             setTimeout(() => {
@@ -261,7 +273,8 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
 
 
         } catch (err) {
-            setError(err.message.replace('Firebase: ', ''));
+            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+            setError(message);
             setIsLoading(false);
         }
     };
@@ -302,11 +315,11 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                icon={<LockIcon className="w-5 h_5 text-gray-400" />}
+                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
                 actionIcon={
                     showPassword ? 
-                    <EyeOff className="w-5 h_5 text-gray-400 hover:text-white" /> : 
-                    <Eye className="w-5 h_5 text-gray-400 hover:text-white" />
+                    <EyeOff className="w-5 h-5 text-gray-400 hover:text-white" /> : 
+                    <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
                 }
                 onActionClick={() => setShowPassword(!showPassword)}
                 autoComplete="new-password"
@@ -317,7 +330,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
-                icon={<LockIcon className="w-5 h_5 text-gray-400" />}
+                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
                 autoComplete="new-password"
             />
 
@@ -333,6 +346,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
 };
 
 const ForgotPasswordForm = ({ setError, setSuccessMessage }) => {
+    const auth = useFirebaseAuth();
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -340,7 +354,7 @@ const ForgotPasswordForm = ({ setError, setSuccessMessage }) => {
         e.preventDefault();
         setError('');
         setSuccessMessage('');
-        if (!email) {
+        if (!email || !auth) {
             setError('Please enter your email address.');
             return;
         }
@@ -349,7 +363,8 @@ const ForgotPasswordForm = ({ setError, setSuccessMessage }) => {
             await sendPasswordResetEmail(auth, email);
             setSuccessMessage('Password reset email sent! Check your inbox.');
         } catch (err) {
-            setError(err.message.replace('Firebase: ', ''));
+            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+            setError(message);
         }
         setIsLoading(false);
     };
@@ -403,7 +418,7 @@ const InputField = ({ id, type, value, onChange, placeholder, icon, actionIcon, 
 );
 
 const ErrorMessage = ({ message }) => (
-  <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6 text-sm text-center">
+  <div className="bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6 text-sm text-center capitalize">
     {message}
   </div>
 );
@@ -415,5 +430,5 @@ const SuccessMessage = ({ message }) => (
   );
 
 const LoadingSpinner = ({ size = 'large' }) => (
-  <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
+  <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );

@@ -2,22 +2,14 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 function initializeServices() {
   const isConfigured = getApps().length > 0;
   const firebaseApp = isConfigured ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(firebaseApp);
   const firestore = getFirestore(firebaseApp);
-
-  // NOTE: Emulator connections have been removed to connect to production services,
-  // as they can be unreliable in some cloud development environments.
-  // if (process.env.NODE_ENV !== 'production' && typeof window !== 'undefined') {
-  //   const host = window.location.hostname;
-  //   connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
-  //   connectFirestoreEmulator(firestore, host, 8080);
-  // }
 
   return { firebaseApp, auth, firestore, isConfigured };
 }

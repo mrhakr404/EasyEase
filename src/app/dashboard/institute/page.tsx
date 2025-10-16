@@ -1,52 +1,16 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
 import { Building, LayoutDashboard, BarChart3, Users, BookCopy, Settings } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 
 
-const DashboardSkeleton = () => (
-  <div className="flex h-screen">
-    <div className="w-64 p-4 border-r">
-      <Skeleton className="h-8 w-32 mb-8" />
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-      </div>
-    </div>
-    <div className="flex-1 p-8 space-y-8">
-      <Skeleton className="h-10 w-1/4" />
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-36 w-full" />
-      </div>
-      <Skeleton className="h-64 w-full" />
-    </div>
-  </div>
-);
-
-
 export default function InstituteDashboardPage() {
-  const { user, profile, loading } = useAuth();
-
-  if (loading || (user && !profile?.profileLoaded)) {
-    return <DashboardSkeleton />;
-  }
-
-  if (!user || profile?.role !== 'institute') {
-    return <DashboardSkeleton />;
-  }
-
-
+  
   return (
     <SidebarProvider>
       <Sidebar>

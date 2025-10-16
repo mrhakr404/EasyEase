@@ -22,29 +22,6 @@ const ChatInterface = dynamic(() => Promise.resolve(MockChatInterface), { ssr: f
 const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CodeCompanion = dynamic(() => Promise.resolve(MockCodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
-const DashboardSkeleton = () => (
-  <div className="flex h-screen">
-    <div className="w-64 p-4 border-r">
-      <Skeleton className="h-8 w-32 mb-8" />
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-      </div>
-    </div>
-    <div className="flex-1 p-8 space-y-8">
-      <Skeleton className="h-10 w-1/4" />
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-36 w-full" />
-        <Skeleton className="h-36 w-full" />
-      </div>
-      <Skeleton className="h-64 w-full" />
-    </div>
-  </div>
-);
-
 const Overview = () => (
     <>
         <h1 className="text-3xl font-bold mb-8 font-headline">Student Dashboard</h1>
@@ -94,17 +71,8 @@ const Overview = () => (
 
 
 export default function StudentDashboardPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile } = useAuth();
   const [activeComponent, setActiveComponent] = useState('Overview');
-
-  if (loading || (user && !profile?.profileLoaded)) {
-    return <DashboardSkeleton />;
-  }
-
-  if (!user || profile?.role !== 'student') {
-     // The AuthProvider should handle the redirect, but this is a fallback.
-    return <DashboardSkeleton />;
-  }
   
   const renderContent = () => {
     switch (activeComponent) {

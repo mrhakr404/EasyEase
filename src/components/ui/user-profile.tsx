@@ -1,7 +1,7 @@
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/lib/firebase/client';
+import { useAuth as useAppAuth } from '@/context/AuthContext';
+import { useAuth } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,11 +25,14 @@ function getInitials(name?: string | null) {
 }
 
 export function UserProfile() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAppAuth();
+  const auth = useAuth();
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      if (auth) {
+        await auth.signOut();
+      }
       // AuthProvider will handle the redirect
     } catch (error) {
       console.error('Logout failed:', error);
@@ -47,22 +50,25 @@ export function UserProfile() {
     )
   }
 
+  const displayName = user.displayName || user.email;
+  const initials = getInitials(displayName);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="w-full justify-start text-left h-auto p-2">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
-              <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+              <AvatarImage src={user.photoURL ?? ''} alt={displayName ?? 'User'} />
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col text-left truncate">
               <span className="text-sm font-medium truncate">
-                {user.displayName || user.email}
+                {displayName}
               </span>
-               <span className="text-xs text-muted-foreground truncate">
-                {user.displayName ? user.email : ''}
-              </span>
+               {user.displayName && <span className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </span>}
             </div>
           </div>
         </Button>
@@ -70,7 +76,7 @@ export function UserProfile() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>

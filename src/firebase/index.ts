@@ -1,0 +1,76 @@
+'use client';
+
+import {
+  useState,
+  useEffect,
+  useMemo,
+} from 'react';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import {
+  connectAuthEmulator,
+  getAuth,
+  onIdTokenChanged,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+
+import { firebaseConfig } from './config';
+import type { User, Auth } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import type { Firestore } from 'firebase/firestore';
+
+export * from './provider';
+export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+
+type FirebaseServices = {
+  app: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
+};
+
+// Singleton pattern to avoid re-initializing Firebase on every render
+let firebaseServices: FirebaseServices | null = null;
+
+/**
+ * Initializes Firebase services. It connects to emulators if in a development
+ * environment, otherwise it connects to production services.
+ * @returns An object containing the initialized Firebase app, auth, and firestore services.
+ */
+export function initializeFirebase(): FirebaseServices {
+  if (firebaseServices) {
+    return firebaseServices;
+  }
+
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const firestore = getFirestore(app);
+
+  firebaseServices = { app, auth, firestore };
+  return firebaseServices;
+}
+
+/**
+ * A React hook that provides the current authenticated user.
+ * It listens for changes in the authentication state and updates accordingly.
+ * @returns An object containing the user and a boolean indicating if the
+ * authentication state has been initialized.
+ */
+export function useUser() {
+  const [user, setUser] = useState<User | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const { auth } = initializeFirebase();
+
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, (user) => {
+      setUser(user);
+      if (!initialized) {
+        setInitialized(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, initialized]);
+
+  return { user, initialized };
+}
