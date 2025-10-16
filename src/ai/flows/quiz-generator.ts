@@ -4,35 +4,15 @@
  * @fileOverview An AI-powered quiz generator.
  *
  * - generateQuiz - A function that generates a multiple-choice quiz.
- * - QuizRequest - The input type for the generateQuiz function.
- * - Quiz - The return type for the generateQuiz function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-
-export const QuizRequestSchema = z.object({
-  topic: z.string().describe('The topic for the quiz (e.g., "React Hooks")'),
-  numQuestions: z
-    .number()
-    .min(3)
-    .max(10)
-    .default(5)
-    .describe('The number of questions to generate'),
-});
-export type QuizRequest = z.infer<typeof QuizRequestSchema>;
-
-const McqQuestionSchema = z.object({
-  question: z.string().describe('The question text.'),
-  options: z.array(z.string()).describe('An array of 4 possible answers.'),
-  answer: z.string().describe('The correct answer from the options array.'),
-});
-
-export const QuizSchema = z.object({
-  title: z.string().describe('The title of the quiz.'),
-  questions: z.array(McqQuestionSchema),
-});
-export type Quiz = z.infer<typeof QuizSchema>;
+import {
+  QuizRequestSchema,
+  QuizSchema,
+  type Quiz,
+  type QuizRequest,
+} from '@/lib/types/quiz';
 
 const prompt = ai.definePrompt({
   name: 'quizPrompt',

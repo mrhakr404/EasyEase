@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Sparkles, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { generateQuiz, type Quiz, type QuizRequest } from '@/ai/flows/quiz-generator';
+import { generateQuiz } from '@/ai/flows/quiz-generator';
+import { type Quiz, type QuizRequest } from '@/lib/types/quiz';
 import { cn } from '@/lib/utils';
 import { Progress } from '../ui/progress';
 
