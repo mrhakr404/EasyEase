@@ -1,0 +1,65 @@
+type Institution @table {
+  name: String!
+  createdAt: Timestamp!
+  logoUrl: String
+  websiteUrl: String
+}
+
+type User @table {
+  email: String!
+  displayName: String!
+  role: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  bio: String
+  institution: Institution
+}
+
+type Course @table {
+  title: String!
+  description: String!
+  instructor: User!
+  createdAt: Timestamp!
+  institution: Institution!
+  imageUrl: String
+  syllabusUrl: String
+}
+
+type Enrollment @table(key: ["student", "course"]) {
+  student: User!
+  course: Course!
+  enrolledAt: Timestamp!
+  completionStatus: String
+  lastAccessedAt: Timestamp
+}
+
+type Lesson @table {
+  title: String!
+  order: Int!
+  contentType: String!
+  createdAt: Timestamp!
+  course: Course!
+  content: String
+  duration: Int
+}
+
+type Assignment @table {
+  title: String!
+  deadline: Timestamp!
+  maxPoints: Int!
+  assignmentType: String!
+  createdAt: Timestamp!
+  course: Course!
+  description: String
+  rubric: String
+}
+
+type Submission @table {
+  submittedAt: Timestamp!
+  student: User!
+  assignment: Assignment!
+  submissionContent: String
+  grade: Int
+  feedback: String
+  aiReviewFeedback: String
+}

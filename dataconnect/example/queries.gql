@@ -1,0 +1,41 @@
+mutation CreateInstitution @auth(level: USER, insecureReason: "Any user can create an institution") {
+  institution_insert(data: {
+    name: "Example Institution",
+    websiteUrl: "https://example.com",
+    logoUrl: "https://example.com/logo.png",
+    createdAt_expr: "request.time"
+  })
+}
+
+query ListCourses @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  courses {
+    id
+    title
+    description
+    instructor {
+      id
+      displayName
+    }
+  }
+}
+
+mutation EnrollInCourse($courseId: UUID!) @auth(level: USER) {
+  enrollment_insert(data: {
+    courseId: $courseId,
+    studentId_expr: "auth.uid",
+    enrolledAt_expr: "request.time"
+  })
+}
+
+query GetMySubmissions @auth(level: USER) {
+  submissions(where: {studentId_expr: "auth.uid"}) {
+    id
+    assignment {
+      title
+      maxPoints
+    }
+    submissionContent
+    grade
+    submittedAt
+  }
+}
