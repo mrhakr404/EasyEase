@@ -92,3 +92,29 @@ button, a, [role="button"], input, select, textarea {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  [data-sidebar="content"] {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  [data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+    opacity: 0;
+  }
+
+  [data-sidebar="content"]:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+}
