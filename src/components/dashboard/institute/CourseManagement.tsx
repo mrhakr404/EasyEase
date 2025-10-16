@@ -10,13 +10,14 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, BookCopy, Users, Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 // Mock data, replace with Firestore data
 const initialCourses = [
-  { id: '1', title: 'Advanced React', description: 'Deep dive into React performance and hooks.', studentCount: 78, published: true },
-  { id: '2', title: 'Intro to AI', description: 'Learn the fundamentals of Artificial Intelligence.', studentCount: 120, published: true },
-  { id: '3', title: 'UX Design Fundamentals', description: 'Principles of user experience and interface design.', studentCount: 55, published: false },
-  { id: '4', title: 'Next.js for Production', description: 'Build and deploy scalable Next.js applications.', studentCount: 95, published: true },
+  { id: '1', title: 'Advanced React', description: 'Deep dive into React performance and hooks.', studentCount: 78, published: true, color: 'text-sky-400', borderColor: 'hover:border-sky-400/50' },
+  { id: '2', title: 'Intro to AI', description: 'Learn the fundamentals of Artificial Intelligence.', studentCount: 120, published: true, color: 'text-violet-400', borderColor: 'hover:border-violet-400/50' },
+  { id: '3', title: 'UX Design Fundamentals', description: 'Principles of user experience and interface design.', studentCount: 55, published: false, color: 'text-amber-400', borderColor: 'hover:border-amber-400/50' },
+  { id: '4', title: 'Next.js for Production', description: 'Build and deploy scalable Next.js applications.', studentCount: 95, published: true, color: 'text-rose-400', borderColor: 'hover:border-rose-400/50' },
 ];
 
 type Course = typeof initialCourses[0];
@@ -35,6 +36,8 @@ export function CourseManagement() {
       description: newCourseDescription,
       studentCount: 0,
       published: false,
+      color: 'text-slate-400',
+      borderColor: 'hover:border-slate-400/50'
     };
     setCourses([newCourse, ...courses]);
     setNewCourseTitle('');
@@ -86,13 +89,16 @@ export function CourseManagement() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {courses.map((course) => (
-          <Card key={course.id} className="flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/50">
+          <Card key={course.id} className={cn("flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1", course.borderColor)}>
             <CardHeader>
               <div className="flex justify-between items-start">
-                  <CardTitle className="leading-tight">{course.title}</CardTitle>
+                  <div className="flex items-start gap-4">
+                    <BookCopy className={cn("w-6 h-6 mt-1 flex-shrink-0", course.color)} />
+                    <CardTitle className="leading-tight">{course.title}</CardTitle>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 flex-shrink-0">
                             <MoreVertical className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
@@ -103,10 +109,10 @@ export function CourseManagement() {
                     </DropdownMenuContent>
                   </DropdownMenu>
               </div>
-              <CardDescription className="line-clamp-2">{course.description}</CardDescription>
+              <CardDescription className="line-clamp-2 pl-10">{course.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex-1">
-              <div className="flex items-center text-sm text-muted-foreground">
+              <div className="flex items-center text-sm text-muted-foreground pl-10">
                 <Users className="w-4 h-4 mr-2" />
                 <span>{course.studentCount} Students Enrolled</span>
               </div>
