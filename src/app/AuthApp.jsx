@@ -53,7 +53,7 @@ export default function AuthApp({ initialView = 'login' }) {
     useEffect(() => {
         if (isUserLoading) {
             setAppState('loading');
-        } else if (user) {
+        } else if (user && user.emailVerified) {
             setEmailForDashboard(user.email);
             setAppState('dashboard');
         } else {
@@ -63,15 +63,12 @@ export default function AuthApp({ initialView = 'login' }) {
 
     useEffect(() => {
         const handleError = (err) => {
-             // The full error object is thrown, not a string
             const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
             setError(message);
         };
         
-        // Listen for auth errors emitted from anywhere in the app
         errorEmitter.on('permission-error', handleError);
         
-        // Use the userError from the main provider as a fallback
         if (userError) {
             handleError(userError);
         }
@@ -342,7 +339,7 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
                 createdAt: serverTimestamp(),
             });
             
-            setSuccessMessage('Sign up successful! A verification link has been sent to your email.');
+            setSuccessMessage('Sign up successful! Please check your email to verify your account. You can close this window.');
             setIsLoading(false);
             
             // Sign out the user immediately so they have to verify first
@@ -351,7 +348,8 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
             // Switch to login view after a short delay
             setTimeout(() => {
                 setAuthView('login');
-            }, 3000);
+                setSuccessMessage('Please login with your new account.');
+            }, 5000);
 
 
         } catch (err) {

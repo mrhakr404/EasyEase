@@ -15,20 +15,23 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // We only want to redirect if the user is already logged in.
+    // Wait until user and profile loading is complete
     if (!isUserLoading && !isProfileLoading && user && userProfile) {
-      const { role } = userProfile;
-      if (role === 'student') {
-        router.replace('/dashboard/student');
-      } else if (role === 'institute') {
-        router.replace('/dashboard/institute');
+      if (user.emailVerified) {
+        const { role } = userProfile;
+        if (role === 'student') {
+          router.replace('/dashboard/student');
+        } else if (role === 'institute') {
+          router.replace('/dashboard/institute');
+        }
+        // Admins or other roles will stay on the landing page for now.
       }
-      // If role is admin or something else, they'll just stay on the landing page for now.
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
-  // If we are checking for a user, show a loading screen to prevent flicker.
-  if (isUserLoading || isProfileLoading) {
+  // While checking user auth or profile, show a loading screen.
+  // This prevents the landing page from flashing for logged-in users.
+  if (isUserLoading || (user && isProfileLoading)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="absolute inset-0 -z-10">
@@ -38,15 +41,27 @@ export default function Home() {
       </div>
     );
   }
-
-  // If no user, show the full landing page.
+  
+  // If the user is not logged in, or their email is not verified, show the full landing page.
+  if (!user || !user.emailVerified) {
+    return (
+      <>
+        <Header />
+        <main className="flex-grow flex flex-col">
+          <Hero />
+        </main>
+        <Footer />
+      </>
+    );
+  }
+  
+  // Fallback loading state while redirecting
   return (
-    <>
-      <Header />
-      <main className="flex-grow flex flex-col">
-        <Hero />
-      </main>
-      <Footer />
-    </>
-  );
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="absolute inset-0 -z-10">
+          <StaticSparkles />
+        </div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
 }
