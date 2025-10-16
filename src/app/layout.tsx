@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
-import './globals.css';
 import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
 import { FirebaseProvider } from '@/firebase/provider';
+import { ClientOnly } from '@/components/ui/ClientOnly';
 
 
 export const metadata: Metadata = {
@@ -28,7 +28,9 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased min-h-screen flex flex-col')}>
         <FirebaseProvider>
-          <ClientCursorEffect />
+          <ClientOnly>
+            <ClientCursorEffect />
+          </ClientOnly>
           {children}
           <Toaster />
         </FirebaseProvider>
