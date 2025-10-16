@@ -44,6 +44,9 @@ export function ProfileSettings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Email Verification State
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
 
   // Image Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,12 +115,19 @@ export function ProfileSettings() {
   
   const handleSendVerification = async () => {
     if (user && !user.emailVerified) {
+        setIsSendingVerification(true);
         try {
             await sendEmailVerification(user);
             toast({ title: 'Email Sent', description: 'A new verification email has been sent to your address.'});
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error sending verification email:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to send verification email.'});
+            let description = 'Failed to send verification email.';
+            if (error.code === 'auth/too-many-requests') {
+                description = 'Too many requests. Please wait a few minutes before trying again.';
+            }
+            toast({ variant: 'destructive', title: 'Error', description });
+        } finally {
+            setIsSendingVerification(false);
         }
     }
   }
@@ -250,7 +260,10 @@ export function ProfileSettings() {
                        </div>
                     </div>
                     {!user?.emailVerified && (
-                        <Button variant="secondary" onClick={handleSendVerification}>Send Verification</Button>
+                        <Button variant="secondary" onClick={handleSendVerification} disabled={isSendingVerification}>
+                             {isSendingVerification && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Send Verification
+                        </Button>
                     )}
                 </div>
 
