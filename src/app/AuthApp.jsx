@@ -154,8 +154,6 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
                 setError(message);
             })
             .finally(() => {
-                 // In a non-blocking flow, the loading state is typically handled by a global state listener
-                 // For simplicity here, we'll stop loading on error. On success, the component unmounts.
                  setIsLoading(false);
             });
     };
@@ -238,23 +236,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         initiateEmailSignUp(auth, email, password)
             .then(async (userCredential) => {
                 const user = userCredential.user;
-
                 await sendEmailVerification(user);
-
-                // The onUserCreate cloud function will now handle profile creation.
-                // We just need to set custom claims for the role.
-                // NOTE: Setting custom claims requires the Admin SDK, so this would
-                // typically be done in a Cloud Function callable from the client.
-                // For this example, we assume a function `setInitialRole` exists.
-                // To keep this example simple, we'll store the role in Firestore,
-                // which our `onUserCreate` function will read. We'll add a 'pendingRole' field.
-                
-                // For a truly secure system, we'd call a function here to set a custom claim
-                // before the profile is even created. The onUserCreate function would then read that claim.
-                // Since we can't call a function here, we'll rely on the onUserCreate
-                // function to assign a default role or handle logic based on email domain, etc.
-                // The `role` selected in the UI will be passed to a temporary doc.
-                // A secure implementation would require a callable function to handle this.
                 
                 setSuccessMessage('Sign up successful! Please check your email to verify your account.');
                 
