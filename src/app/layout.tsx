@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
 import { FirebaseProvider } from '@/firebase/provider';
 import { ClientOnly } from '@/components/ui/ClientOnly';
+import '@/app/globals.css';
 
 
 export const metadata: Metadata = {
