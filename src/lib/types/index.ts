@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   firstName?: string;
   lastName?: string;
+  username?: string;
   photoURL?: string;
   role: 'student' | 'institute' | 'admin';
   createdAt: Timestamp;
@@ -126,3 +127,5 @@ export interface ChatMessage extends MessageData {
   id: string;
   createdAt: Timestamp;
 }
+
+    
