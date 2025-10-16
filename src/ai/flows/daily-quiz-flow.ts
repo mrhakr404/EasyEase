@@ -37,7 +37,8 @@ const dailyQuizFlow = ai.defineFlow(
     outputSchema: McqQuestionSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const response = await prompt(input);
+    const output = response.output();
     if (!output) {
       throw new Error('Failed to generate daily quiz question');
     }

@@ -57,7 +57,11 @@ const aiCodeReviewFlow = ai.defineFlow(
     outputSchema: AICodeReviewOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    const response = await prompt(input);
+    const output = response.output();
+    if (!output) {
+      throw new Error("AI response was empty.");
+    }
+    return output;
   }
 );
