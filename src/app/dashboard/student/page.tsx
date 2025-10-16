@@ -213,7 +213,7 @@ export default function StudentDashboardPage() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <main className="p-8 h-full">
+        <main className="p-8 h-full overflow-y-auto" data-main-scroll>
             {renderContent()}
         </main>
       </SidebarInset>
