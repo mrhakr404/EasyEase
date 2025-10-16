@@ -9,11 +9,10 @@ import { z } from 'zod';
 import { ChatRequestSchema, type ChatRequest, MessageDataSchema } from '@/lib/types';
 
 
-const prompt = ai.definePrompt(
+const tutorPrompt = ai.definePrompt(
   {
     name: 'tutorPrompt',
     input: { schema: ChatRequestSchema },
-    output: { schema: MessageDataSchema },
     system: `You are an expert personal tutor named EnrollEase AI. Your goal is to help students understand concepts, not just give them answers. Engage in a Socratic dialogue. When a student asks a question, guide them with leading questions to help them arrive at the answer themselves. Keep your responses concise and encouraging. Analyze the provided chat history to understand the context of the conversation.`,
     prompt: `{{#if history}}
 Chat History:
@@ -41,7 +40,7 @@ const continueChatFlow = ai.defineFlow(
     },
     async (request) => {
         const { response } = await ai.generate({
-            prompt: prompt.prompt,
+            prompt: tutorPrompt.prompt,
             input: request,
             model: 'googleai/gemini-2.5-flash',
             stream: (chunk) => {
