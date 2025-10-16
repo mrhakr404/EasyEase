@@ -1,9 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useUser } from '@/firebase/provider';
-import { useRouter } from 'next/navigation';
-import useUserProfile from '@/hooks/useUserProfile';
+import { useAuth } from '@/context/AuthContext';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { Building, LayoutDashboard, BarChart3, Users, BookCopy, Settings } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -36,23 +34,16 @@ const DashboardSkeleton = () => (
 
 
 export default function InstituteDashboardPage() {
-  const { user, isUserLoading } = useUser();
-  const { userProfile, isLoading: isProfileLoading } = useUserProfile(user?.uid);
-  const router = useRouter();
+  const { user, profile, loading } = useAuth();
 
-  if (isUserLoading || isProfileLoading) {
+  if (loading) {
     return <DashboardSkeleton />;
   }
 
-  if (!user) {
-    router.replace('/login');
+  if (!user || profile?.role !== 'institute') {
     return <DashboardSkeleton />;
   }
 
-  if (userProfile && userProfile.role !== 'institute') {
-    router.replace(`/dashboard/${userProfile.role || 'student'}`);
-    return <DashboardSkeleton />;
-  }
 
   return (
     <SidebarProvider>

@@ -1,13 +1,10 @@
 
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { 
-  initiateEmailSignIn 
-} from '@/firebase/non-blocking-login';
+import React, { useState, useEffect } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail, sendEmailVerification, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, firestore } from '@/lib/firebase/client';
 
 
 // --- Helper Functions & SVGs ---
@@ -44,82 +41,9 @@ const LockIcon = ({ ...props }) => (
 
 // --- Main Application Component ---
 export default function AuthApp({ initialView = 'login' }) {
-    const { user, isUserLoading, auth, firestore, userError } = useFirebase();
-    const [appState, setAppState] = useState('loading'); // 'loading', 'auth', 'dashboard'
+    const [authView, setAuthView] = useState(initialView);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [emailForDashboard, setEmailForDashboard] = useState('');
-
-    useEffect(() => {
-        if (isUserLoading) {
-            setAppState('loading');
-        } else if (user && user.emailVerified) {
-            setEmailForDashboard(user.email);
-            setAppState('dashboard');
-        } else {
-            setAppState('auth');
-        }
-    }, [user, isUserLoading]);
-
-    useEffect(() => {
-        const handleError = (err) => {
-            const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
-            setError(message);
-        };
-        
-        errorEmitter.on('permission-error', handleError);
-        
-        if (userError) {
-            handleError(userError);
-        }
-
-        return () => {
-            errorEmitter.off('permission-error', handleError);
-        }
-    }, [userError]);
-
-    const handleSignOut = async () => {
-        if (auth) {
-            try {
-                await auth.signOut();
-                // onAuthStateChanged will handle the rest
-            } catch (err) {
-                console.error("Sign out failed:", err);
-                setError(err.message);
-            }
-        }
-    };
-
-    const renderContent = () => {
-        switch (appState) {
-            case 'loading':
-                return <LoadingSpinner />;
-            case 'dashboard':
-                return <Dashboard userEmail={emailForDashboard} onSignOut={handleSignOut} />;
-            case 'auth':
-            default:
-                return <AuthScreen 
-                  auth={auth} 
-                  db={firestore} 
-                  error={error} 
-                  setError={setError} 
-                  successMessage={successMessage}
-                  setSuccessMessage={setSuccessMessage}
-                  initialView={initialView} 
-                />;
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-transparent font-sans p-4">
-            {renderContent()}
-        </div>
-    );
-}
-
-// --- Screen Components ---
-const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessage, initialView }) => {
-    const [authView, setAuthView] = useState(initialView); // 'login', 'signup', 'forgot'
 
     useEffect(() => {
         setAuthView(initialView);
@@ -136,7 +60,7 @@ const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessa
           return {
             title: 'Create Account',
             subtitle: 'Get started with a new account',
-            content: <SignUpForm auth={auth} db={db} setError={setError} setSuccessMessage={setSuccessMessage} setAuthView={setAuthView} />,
+            content: <SignUpForm setError={setError} setSuccessMessage={setSuccessMessage} setAuthView={setAuthView} />,
             footer: (
               <button
                 onClick={() => { setAuthView('login'); resetMessages(); }}
@@ -150,7 +74,7 @@ const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessa
           return {
             title: 'Forgot Password',
             subtitle: 'Enter your email to reset your password',
-            content: <ForgotPasswordForm auth={auth} setError={setError} setSuccessMessage={setSuccessMessage} />,
+            content: <ForgotPasswordForm setError={setError} setSuccessMessage={setSuccessMessage} />,
             footer: (
               <button
                 onClick={() => { setAuthView('login'); resetMessages(); }}
@@ -165,7 +89,7 @@ const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessa
           return {
             title: 'Welcome Back',
             subtitle: 'Sign in to continue',
-            content: <LoginForm auth={auth} setError={setError} onForgotPasswordClick={() => { setAuthView('forgot'); resetMessages(); }} />,
+            content: <LoginForm setError={setError} onForgotPasswordClick={() => { setAuthView('forgot'); resetMessages(); }} />,
             footer: (
               <button
                 onClick={() => { setAuthView('signup'); resetMessages(); }}
@@ -181,50 +105,35 @@ const AuthScreen = ({ auth, db, error, setError, successMessage, setSuccessMessa
     const { title, subtitle, content, footer } = renderAuthContent();
 
     return (
-        <div className="w-full max-w-md">
-            <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
-                <div className="p-8">
-                    <h2 className="text-3xl font-bold text-white text-center mb-2 font-headline">
-                        {title}
-                    </h2>
-                    <p className="text-muted-foreground text-center mb-8">
-                        {subtitle}
-                    </p>
+        <div className="flex items-center justify-center min-h-screen bg-transparent font-sans p-4">
+            <div className="w-full max-w-md">
+                <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg transition-all duration-300">
+                    <div className="p-8">
+                        <h2 className="text-3xl font-bold text-white text-center mb-2 font-headline">
+                            {title}
+                        </h2>
+                        <p className="text-muted-foreground text-center mb-8">
+                            {subtitle}
+                        </p>
 
-                    {error && <ErrorMessage message={error} />}
-                    {successMessage && <SuccessMessage message={successMessage} />}
+                        {error && <ErrorMessage message={error} />}
+                        {successMessage && <SuccessMessage message={successMessage} />}
 
-                    {content}
+                        {content}
 
-                    <div className="text-center mt-6">
-                        {footer}
+                        <div className="text-center mt-6">
+                            {footer}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
-};
-
-const Dashboard = ({ userEmail, onSignOut }) => (
-  <div className="w-full max-w-md text-center">
-    <div className="relative bg-background/50 backdrop-blur-md border border-white/20 rounded-2xl shadow-lg p-8">
-      <UserIcon className="w-16 h-16 mx-auto text-primary mb-4"/>
-      <h2 className="text-2xl font-bold text-white mb-2 font-headline">Welcome!</h2>
-      <p className="text-muted-foreground mb-6 truncate">{userEmail}</p>
-      <button
-        onClick={onSignOut}
-        className="w-full bg-primary text-primary-foreground font-bold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-75"
-      >
-        Sign Out
-      </button>
-    </div>
-  </div>
-);
-
+}
 
 // --- Form Components ---
 
-const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
+const LoginForm = ({ setError, onForgotPasswordClick }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -240,12 +149,11 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
         setIsLoading(true);
         
         try {
-            await initiateEmailSignIn(auth, email, password);
-            // On success, the onAuthStateChanged listener in the main app
-            // will handle the navigation to the dashboard.
+            await signInWithEmailAndPassword(auth, email, password);
+            // On success, the AuthProvider's onAuthStateChanged listener 
+            // will handle the redirection.
         } catch (err) {
-            // This will now catch auth/invalid-credential and other login errors
-            const message = err.message ? err.message.replace('Firebase: ', '') : 'An unexpected error occurred.';
+            const message = err.message ? err.message.replace('Firebase: ', '').replace('auth/invalid-credential', 'Invalid email or password.') : 'An unexpected error occurred.';
             setError(message);
             setIsLoading(false);
         }
@@ -298,7 +206,7 @@ const LoginForm = ({ auth, setError, onForgotPasswordClick }) => {
     );
 };
 
-const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
+const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -328,7 +236,7 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
             await sendEmailVerification(user);
 
             // Save user profile to Firestore
-            const userProfileRef = doc(db, 'userProfiles', user.uid);
+            const userProfileRef = doc(firestore, 'userProfiles', user.uid);
             await setDoc(userProfileRef, {
                 email: user.email,
                 id: user.uid,
@@ -394,11 +302,11 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+                icon={<LockIcon className="w-5 h_5 text-gray-400" />}
                 actionIcon={
                     showPassword ? 
-                    <EyeOff className="w-5 h-5 text-gray-400 hover:text-white" /> : 
-                    <Eye className="w-5 h-5 text-gray-400 hover:text-white" />
+                    <EyeOff className="w-5 h_5 text-gray-400 hover:text-white" /> : 
+                    <Eye className="w-5 h_5 text-gray-400 hover:text-white" />
                 }
                 onActionClick={() => setShowPassword(!showPassword)}
                 autoComplete="new-password"
@@ -409,7 +317,7 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm Password"
-                icon={<LockIcon className="w-5 h-5 text-gray-400" />}
+                icon={<LockIcon className="w-5 h_5 text-gray-400" />}
                 autoComplete="new-password"
             />
 
@@ -424,7 +332,7 @@ const SignUpForm = ({ auth, db, setError, setSuccessMessage, setAuthView }) => {
     );
 };
 
-const ForgotPasswordForm = ({ auth, setError, setSuccessMessage }) => {
+const ForgotPasswordForm = ({ setError, setSuccessMessage }) => {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -509,7 +417,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
-
-    

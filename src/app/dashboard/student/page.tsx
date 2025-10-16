@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useUser } from '@/firebase/provider';
-import { useRouter } from 'next/navigation';
-import useUserProfile from '@/hooks/useUserProfile';
+import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users } from 'lucide-react';
@@ -94,22 +92,14 @@ const Overview = () => (
 
 
 export default function StudentDashboardPage() {
-  const { user, isUserLoading } = useUser();
-  const { userProfile, isLoading: isProfileLoading } = useUserProfile(user?.uid);
-  const router = useRouter();
+  const { user, profile, loading } = useAuth();
   const [activeComponent, setActiveComponent] = useState('Overview');
 
-  if (isUserLoading || isProfileLoading) {
+  if (loading) {
     return <DashboardSkeleton />;
   }
 
-  if (!user) {
-    router.replace('/login');
-    return <DashboardSkeleton />;
-  }
-
-  if (userProfile && userProfile.role !== 'student') {
-    router.replace(`/dashboard/${userProfile.role || 'institute'}`);
+  if (!user || profile?.role !== 'student') {
     return <DashboardSkeleton />;
   }
   
