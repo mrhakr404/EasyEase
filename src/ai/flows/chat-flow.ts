@@ -32,7 +32,13 @@ Tutor:
 );
 
 export async function continueChat(request: ChatRequest): Promise<MessageData> {
-  const { text } = await ai.run(tutorPrompt, { input: request });
+  const response = await ai.generate({
+    prompt: tutorPrompt,
+    history: request.history.map(m => ({role: m.role, content: [{text: m.text}]})),
+    input: request.currentMessage.text,
+  });
+
+  const text = response.text;
   
   return {
       role: 'model' as const,
