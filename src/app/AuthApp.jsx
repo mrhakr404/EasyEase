@@ -232,27 +232,18 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         
         setIsLoading(true);
 
-        initiateEmailSignUp(auth, email, password)
-            .then(async (userCredential) => {
-                const user = userCredential.user;
-                await sendEmailVerification(user);
-                
-                setSuccessMessage('Sign up successful! Please check your email to verify your account.');
-                
-                await auth.signOut();
-
-                setTimeout(() => {
-                    setAuthView('login');
-                    setSuccessMessage('Please login with your new account.');
-                }, 5000);
-            })
-            .catch((err) => {
-                const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-                setError(message);
-            })
-            .finally(() => {
-                setIsLoading(false);
-            });
+        try {
+            const userCredential = await initiateEmailSignUp(auth, email, password);
+            const user = userCredential.user;
+            await sendEmailVerification(user);
+            setSuccessMessage('Sign up successful! Please check your email to verify your account. You will be redirected shortly.');
+            // The AuthContext will handle the redirection to the dashboard.
+        } catch (err) {
+            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+            setError(message);
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     return (
