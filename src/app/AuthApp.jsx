@@ -211,7 +211,6 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [role, setRole] = useState('student');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -258,25 +257,6 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">I am signing up as a...</label>
-                <div className="flex w-full bg-background/70 border border-white/20 rounded-lg p-1">
-                    <button
-                        type="button"
-                        onClick={() => setRole('student')}
-                        className={`flex-1 py-2 px-4 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ring ${role === 'student' ? 'bg-primary text-primary-foreground' : 'text-white hover:bg-primary/20'}`}
-                    >
-                        Student
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setRole('institute')}
-                        className={`flex-1 py-2 px-4 text-sm font-semibold rounded-md transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ring ${role === 'institute' ? 'bg-primary text-primary-foreground' : 'text-white hover:bg-primary/20'}`}
-                    >
-                        Institute
-                    </button>
-                </div>
-            </div>
             <InputField
                 id="signup-email"
                 type="email"
@@ -409,5 +389,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
