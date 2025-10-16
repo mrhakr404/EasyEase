@@ -41,12 +41,6 @@ Code:
 Instructions: {{{instructions}}}
 
 Provide suggestions for improving code quality, performance, and security. Explain your reasoning behind each suggestion. Focus on best practices and common pitfalls in the given language.
-
-Output format:
-{
-  "suggestions": "suggestion1. suggestion2. suggestion3",
-  "reasoning": "reasoning1. reasoning2. reasoning3"
-}
 `,
 });
 
@@ -57,12 +51,7 @@ const aiCodeReviewFlow = ai.defineFlow(
     outputSchema: AICodeReviewOutputSchema,
   },
   async input => {
-    const { response } = await ai.generate({
-        prompt: prompt,
-        input,
-        model: 'googleai/gemini-2.5-flash',
-    });
-    const output = response.output;
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error("AI response was empty.");
     }

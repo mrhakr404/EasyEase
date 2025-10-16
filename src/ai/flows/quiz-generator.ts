@@ -7,7 +7,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import {
   QuizRequestSchema,
   QuizSchema,
@@ -41,12 +40,7 @@ const quizGeneratorFlow = ai.defineFlow(
     outputSchema: QuizSchema,
   },
   async (input) => {
-    const { response } = await ai.generate({
-        prompt: prompt,
-        input,
-        model: 'googleai/gemini-2.5-flash',
-    });
-    const output = response.output;
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('Failed to generate quiz');
     }
