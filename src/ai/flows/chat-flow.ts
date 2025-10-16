@@ -6,6 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { ChatRequestSchema, type ChatRequest, type MessageData } from '@/lib/types';
+import { z } from 'zod';
 
 const tutorPrompt = ai.definePrompt(
   {
@@ -31,7 +32,7 @@ Tutor:
 );
 
 export async function continueChat(request: ChatRequest): Promise<MessageData> {
-  const { text } = await tutorPrompt(request);
+  const { text } = await ai.run(tutorPrompt, { input: request });
   
   return {
       role: 'model' as const,
