@@ -62,8 +62,8 @@ const Overview = () => {
                 </h1>
                 <p className="text-muted-foreground">Here's a summary of your learning journey today.</p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 col-span-1 xl:col-span-2 relative overflow-hidden group">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group lg:col-span-2">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
                         <div className="flex items-center gap-3">
@@ -79,25 +79,6 @@ const Overview = () => {
                             <Progress value={75} className="w-full" />
                             <span className="text-sm font-semibold text-primary">75%</span>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card className="transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    <CardHeader>
-                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-violet-500/20 rounded-lg border border-violet-500/30">
-                                <TrendingUp className="w-5 h-5 text-violet-400" />
-                            </div>
-                            <CardTitle>Predictive Learning Path</CardTitle>
-                        </div>
-                        <CardDescription>Your next recommended topics to master.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="space-y-3 text-sm">
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> State Management with Zustand</li>
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Server Components in Depth</li>
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Advanced Animation with Framer Motion</li>
-                        </ul>
                     </CardContent>
                 </Card>
                 <Card className="transition-all duration-300 hover:shadow-green-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
@@ -122,8 +103,23 @@ const Overview = () => {
                         <p className="text-sm text-muted-foreground text-center">Daily Quiz Accuracy</p>
                     </CardContent>
                 </Card>
+                <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                     <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                <Calendar className="w-5 h-5 text-red-400" />
+                            </div>
+                            <CardTitle>Assignments Due</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-red-400 to-red-600">3</p>
+                        <p className="text-sm text-muted-foreground">Next due: Friday</p>
+                    </CardContent>
+                </Card>
                 
-                <DailyQuizCard className="md:col-span-2 lg:col-span-3 xl:col-span-4" />
+                <DailyQuizCard className="md:col-span-2 lg:col-span-4" />
                 
             </div>
         </div>
