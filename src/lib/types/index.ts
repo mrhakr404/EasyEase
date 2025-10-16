@@ -77,6 +77,7 @@ export interface Note {
   id: string;
   ownerId: string; // UID of the student who owns the note
   courseId?: string; // Optional: to associate note with a course
+  title: string; // The title of the note
   content: string; // The body of the note
   privacy: 'private' | 'public'; // 'public' could mean visible to institute instructors
   createdAt: Timestamp;

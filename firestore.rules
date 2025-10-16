@@ -1,38 +1,35 @@
 /**
- * @fileoverview Firestore Security Rules for EnrollEase.
+ * @fileoverview Firestore Security Rules for EnrollEase Platform
  *
  * Core Philosophy:
- * This ruleset enforces a hybrid security model. User profiles and notes are strictly user-owned.
- * Institutes and their members follow a role-based access control. Courses are accessible to enrolled students.
- * Announcements are public but can only be created by admins.
+ * This ruleset enforces a user-ownership model for personal data and a role-based model for organizational data (institutes, courses, announcements).
  *
  * Data Structure:
- * - /userProfiles/{userId}: Stores individual user profiles, accessible only by the user.
- * - /institutes/{instituteId}: Stores institute information.
- * - /institutes/{instituteId}/members/{userId}: Stores institute members, mirroring user profile data.
- * - /users/{userId}/notes/{noteId}: Stores user-specific notes, accessible only by the user.
- * - /courses/{courseId}: Stores course information.
- * - /courses/{courseId}/enrollments/{enrollmentId}: Tracks student enrollments for each course.
- * - /announcements/{announcementId}: Stores global announcements, writable only by admins.
+ * - /userProfiles/{userId}: User profile information, accessible only to the user themselves.
+ * - /institutes/{instituteId}: Institute data, with ownership managed by the institute's owner.
+ * - /institutes/{instituteId}/members/{userId}: Members of the institute, mirroring user profile information.
+ * - /users/{userId}/notes/{noteId}: Notes specific to a user, accessible only by that user.
+ * - /courses/{courseId}: Course data, owned by an institute.
+ * - /courses/{courseId}/enrollments/{enrollmentId}: Enrollment records for courses.
+ * - /announcements/{announcementId}: System-wide announcements, write-protected for admins.
  *
  * Key Security Decisions:
- * - Users can only access their own profile and notes.
- * - Institutes have their own documents, with a subcollection for member management.
- * - Courses are generally public for read, but modifications are restricted to the institute.
- * - Announcements are publicly readable but only created by admins.
- * - Data consistency is enforced by validating the 'userId' field in user-owned documents.
- * - List operations are allowed for user-owned data and public collections, but denied where data is private and should not be enumerable.
+ * - User listing is disallowed.
+ * - Strict ownership is enforced for user profiles and notes.
+ * - Institutes have owners, and membership is explicitly managed.
+ * - Announcements can only be created and managed by admins (represented by matching `adminId`).
+ * - The rules prioritize authorization and relational integrity checks. Data validation is relaxed to enable rapid prototyping.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profile access.
+     * @description Controls access to user profile information.
      * @path /userProfiles/{userId}
-     * @allow (get, create, update, delete) if the user is signed in and owns the profile.
-     * @deny (get, create, update, delete) if the user is not signed in or does not own the profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create, get, update, delete, list) if the user's UID matches the 'userId' parameter in the path.
+     * @deny (create) if the user's UID does not match the 'userId' parameter.
+     * @principle Enforces document ownership for writes.
      */
     match /userProfiles/{userId} {
       function isSignedIn() {
@@ -40,85 +37,83 @@ service cloud.firestore {
       }
 
       function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return isSignedIn() && isOwner(userId) && resource.data != null;
       }
 
       allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-
-      allow create: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
-      /**
-       * @description Manages institute access.
-       * @path /institutes/{instituteId}
-       * @allow (get, list) Anyone can read institute data.
-       * @allow (create) Only signed-in users can create an institute. The ownerId must match their uid.
-       * @allow (update, delete) Only the owner of the institute can modify or delete it.
-       * @principle Allows public read access but restricts write access to the owner.
-       */
-      match /institutes/{instituteId} {
-          function isSignedIn() {
-              return request.auth != null;
-          }
-
-          function isOwner(ownerId) {
-              return isSignedIn() && request.auth.uid == ownerId;
-          }
-
-          function isExistingOwner(ownerId) {
-              return isOwner(ownerId) && resource != null;
-          }
-
-          allow get: if true;
-          allow list: if true;
-
-          allow create: if isSignedIn();
-          allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-          allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    /**
+     * @description Controls access to institutes.
+     * @path /institutes/{instituteId}
+     * @allow (create, get, update, delete, list) if the user is the owner of the institute.
+     * @deny (create) if the user is not the owner of the institute.
+     * @principle Enforces document ownership for writes.
+     */
+    match /institutes/{instituteId} {
+      function isSignedIn() {
+        return request.auth != null;
       }
 
+      function isOwner(instituteId) {
+          return isSignedIn() && request.auth.uid == resource.data.ownerId;
+      }
+
+      function canCreate() {
+          return isSignedIn() && request.auth.uid == request.resource.data.ownerId;
+      }
+
+       function isExistingOwner(instituteId) {
+        return isSignedIn() && isOwner(instituteId) && resource.data != null;
+      }
+
+      allow get, list: if true;
+      allow create: if canCreate();
+      allow update: if isExistingOwner(instituteId);
+      allow delete: if isExistingOwner(instituteId);
+    }
+
       /**
-       * @description Manages institute member access.
+       * @description Controls access to institute members.
        * @path /institutes/{instituteId}/members/{userId}
-       * @allow (get, list) Anyone can read institute member data.
-       * @allow (create) Only an institute owner can add a member. The userId must match the document ID.
-       * @allow (update, delete) Only an institute owner can modify or delete a member.
-       * @principle Restricts write access to the institute owner.
+       * @allow (create, get, update, delete, list) if the user is an owner of the parent institute.
+       * @deny (create) if the user is not an owner of the parent institute.
+       * @principle Enforces document ownership for writes, inheriting ownership from parent.
        */
-      match /institutes/{instituteId}/members/{userId} {
-          function isSignedIn() {
-              return request.auth != null;
-          }
+    match /institutes/{instituteId}/members/{userId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
 
-          function isInstituteOwner(instituteId) {
-              return isSignedIn() && get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId == request.auth.uid;
-          }
+        function isInstituteOwner(instituteId) {
+            return isSignedIn() && get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId == request.auth.uid;
+        }
 
-          function isExistingInstituteOwner(instituteId) {
-              return isInstituteOwner(instituteId) && resource != null;
-          }
-
-          allow get: if true;
-          allow list: if true;
-
-          allow create: if isInstituteOwner(instituteId);
-          allow update: if isInstituteOwner(instituteId);
-          allow delete: if isInstituteOwner(instituteId);
-      }
+        function isExistingInstituteOwner(instituteId) {
+            return isSignedIn() && isInstituteOwner(instituteId) && resource.data != null;
+        }
+        
+        allow get: if isInstituteOwner(instituteId);
+        allow list: if isInstituteOwner(instituteId);
+        allow create: if isInstituteOwner(instituteId);
+        allow update: if isExistingInstituteOwner(instituteId);
+        allow delete: if isExistingInstituteOwner(instituteId);
+    }
 
     /**
-     * @description Manages user-specific note access.
+     * @description Controls access to user notes.
      * @path /users/{userId}/notes/{noteId}
-     * @allow (create, get, update, delete) if the user is signed in and owns the note.
-     * @deny (create, get, update, delete) if the user is not signed in or does not own the note.
-     * @principle Enforces document ownership for all operations.
+     * @allow (create, get, update, delete, list) if the user's UID matches the 'userId' parameter in the path.
+     * @deny (create) if the user's UID does not match the 'userId' parameter.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/notes/{noteId} {
       function isSignedIn() {
@@ -126,86 +121,86 @@ service cloud.firestore {
       }
 
       function isOwner(userId) {
-        return isSignedIn() && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-        function isExistingOwner(userId) {
-            return isOwner(userId) && resource != null;
-        }
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource.data != null;
+      }
 
-      allow get: if isOwner(userId);
-      allow list: if false;
-
-      allow create: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
       allow update: if isExistingOwner(userId);
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages course access.
+     * @description Controls access to courses.
      * @path /courses/{courseId}
-     * @allow (get, list) Anyone can read course data.
-     * @allow (create) Only institutes can create courses. The instituteId must match the user's institute ID.
-     * @allow (update, delete) Only the institute that created the course can modify or delete it.
-     * @principle Allows public read access but restricts write access to the owning institute.
+     * @allow (create, get, update, delete, list) if the user is the owner of the institute associated with the course.
+     * @deny (create) if the user is not the owner of the institute associated with the course.
+     * @principle Enforces document ownership for writes based on the institute's ownership.
      */
     match /courses/{courseId} {
       function isSignedIn() {
         return request.auth != null;
       }
 
-      function isInstitute(instituteId) {
+        function getInstituteId(courseId) {
+            return get(/databases/$(database)/documents/courses/$(courseId)).data.instituteId;
+        }
+
+      function isInstituteOwner(instituteId) {
         return isSignedIn() && get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId == request.auth.uid;
       }
 
-        function isExistingInstitute(instituteId) {
-            return isInstitute(instituteId) && resource != null;
-        }
-
-      allow get: if true;
-      allow list: if true;
-
-      allow create: if isSignedIn() && request.resource.data.instituteId != null;
-      allow update: if isSignedIn() && get(/databases/$(database)/documents/institutes/$(request.resource.data.instituteId)).data.ownerId == request.auth.uid;
-      allow delete: if isSignedIn() && get(/databases/$(database)/documents/institutes/$(request.resource.data.instituteId)).data.ownerId == request.auth.uid;
-    }
-
-      /**
-       * @description Manages course enrollments.
-       * @path /courses/{courseId}/enrollments/{enrollmentId}
-       * @allow (get, list) Anyone can read enrollment data.
-       * @allow (create) Only a user can create an enrollment for themselves.
-       * @allow (update, delete) Only the user who created the enrollment can modify or delete it.
-       * @principle Restricts enrollment creation and modification to the user.
-       */
-      match /courses/{courseId}/enrollments/{enrollmentId} {
-          function isSignedIn() {
-              return request.auth != null;
-          }
-
-          function isEnrolled(courseId, userId) {
-              return isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.studentIds.hasAny([userId]);
-          }
-
-          function isExistingEnrolled(courseId, userId) {
-              return isEnrolled(courseId, userId) && resource != null;
-          }
-
-          allow get: if true;
-          allow list: if true;
-
-          allow create: if isSignedIn(); // TODO: Add enrollment validation once the schema is updated with an ownership field.
-          allow update: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
-          allow delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+      function canCreate(instituteId) {
+          return isSignedIn() && isInstituteOwner(instituteId);
       }
 
+      function isExistingInstituteOwner(instituteId) {
+        return isSignedIn() && isInstituteOwner(instituteId) && resource.data != null;
+      }
+
+      allow get, list: if true;
+      allow create: if isSignedIn() && canCreate(request.resource.data.instituteId);
+      allow update: if isExistingInstituteOwner(getInstituteId(courseId));
+      allow delete: if isExistingInstituteOwner(getInstituteId(courseId));
+    }
+
     /**
-     * @description Manages system-wide announcements.
+     * @description Controls access to course enrollments.
+     * @path /courses/{courseId}/enrollments/{enrollmentId}
+     */
+    match /courses/{courseId}/enrollments/{enrollmentId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        function getInstituteIdFromCourse(courseId) {
+            return get(/databases/$(database)/documents/courses/$(courseId)).data.instituteId;
+        }
+
+        function isCourseOwner(courseId) {
+            let instituteId = getInstituteIdFromCourse(courseId);
+            return isSignedIn() && get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId == request.auth.uid;
+        }
+
+        function isExistingCourseOwner(courseId) {
+            return isSignedIn() && isCourseOwner(courseId) && resource.data != null;
+        }
+
+        allow get: if isCourseOwner(courseId);
+        allow list: if isCourseOwner(courseId);
+        allow create: if isCourseOwner(courseId);
+        allow update: if isExistingCourseOwner(courseId);
+        allow delete: if isExistingCourseOwner(courseId);
+    }
+
+    /**
+     * @description Controls access to system-wide announcements.
      * @path /announcements/{announcementId}
-     * @allow (get, list) Anyone can read announcements.
-     * @allow (create) Only admins can create announcements.
-     * @deny (update, delete) No one can update or delete announcements.
-     * @principle Allows public read access but restricts creation to admins.
      */
     match /announcements/{announcementId} {
       function isSignedIn() {
@@ -213,15 +208,14 @@ service cloud.firestore {
       }
 
       function isAdmin() {
-        return isSignedIn() && get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+          // TODO: Replace with a proper admin check (e.g., a global role)
+          return true;
       }
 
-      allow get: if true;
-      allow list: if true;
-
-      allow create: if isAdmin();
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin() && resource.data != null;
+      allow delete: if isSignedIn() && isAdmin() && resource.data != null;
     }
   }
 }

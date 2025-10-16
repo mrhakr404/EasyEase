@@ -14,11 +14,10 @@ import Link from 'next/link';
 
 
 // Mock components for lazy loading
-const MockNotesTab = () => <div className="p-4">Notes Component Loaded</div>;
 const MockWhiteboard = () => <div className="p-4">Whiteboard Component Loaded</div>;
 
 // Lazy load heavy components
-const NotesTab = dynamic(() => Promise.resolve(MockNotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
