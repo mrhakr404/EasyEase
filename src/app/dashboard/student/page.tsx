@@ -9,16 +9,15 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
+import Link from 'next/link';
 
 
 // Mock components for lazy loading
 const MockNotesTab = () => <div className="p-4">Notes Component Loaded</div>;
-const MockChatInterface = () => <div className="p-4">Chat Interface Loaded</div>;
 const MockWhiteboard = () => <div className="p-4">Whiteboard Loaded</div>;
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => Promise.resolve(MockNotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const ChatInterface = dynamic(() => Promise.resolve(MockChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
@@ -78,8 +77,6 @@ export default function StudentDashboardPage() {
     switch (activeComponent) {
         case 'Notes':
             return <NotesTab />;
-        case 'Chat':
-            return <ChatInterface />;
         case 'Whiteboard':
             return <Whiteboard />;
         case 'Code Companion':
@@ -91,13 +88,13 @@ export default function StudentDashboardPage() {
   };
 
   const menuItems = [
-    { name: 'Overview', icon: LayoutDashboard },
-    { name: 'Notes', icon: NotebookText },
-    { name: 'AI Chat', icon: BotMessageSquare },
-    { name: 'Learning Path', icon: Route },
-    { name: 'AR/VR Labs', icon: BrainCircuit },
-    { name: 'Whiteboard', icon: Users },
-    { name: 'Code Companion', icon: BotMessageSquare },
+    { name: 'Overview', icon: LayoutDashboard, href: '#', external: false },
+    { name: 'Notes', icon: NotebookText, href: '#', external: false },
+    { name: 'AI Chat', icon: BotMessageSquare, href: '/dashboard/student/ai-chat', external: true },
+    { name: 'Learning Path', icon: Route, href: '#', external: false },
+    { name: 'AR/VR Labs', icon: BrainCircuit, href: '#', external: false },
+    { name: 'Whiteboard', icon: Users, href: '#', external: false },
+    { name: 'Code Companion', icon: BotMessageSquare, href: '#', external: false },
   ];
 
   return (
@@ -113,13 +110,24 @@ export default function StudentDashboardPage() {
           <SidebarMenu>
             {menuItems.map(item => (
                 <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton 
-                        isActive={activeComponent === item.name}
-                        onClick={() => setActiveComponent(item.name)}
-                    >
-                        <item.icon />
-                        {item.name}
-                    </SidebarMenuButton>
+                    {item.external ? (
+                       <Link href={item.href} className="w-full">
+                         <SidebarMenuButton 
+                            isActive={activeComponent === item.name}
+                            >
+                            <item.icon />
+                            {item.name}
+                        </SidebarMenuButton>
+                       </Link>
+                    ) : (
+                         <SidebarMenuButton 
+                            isActive={activeComponent === item.name}
+                            onClick={() => setActiveComponent(item.name)}
+                        >
+                            <item.icon />
+                            {item.name}
+                        </SidebarMenuButton>
+                    )}
                 </SidebarMenuItem>
             ))}
           </SidebarMenu>

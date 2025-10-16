@@ -91,3 +91,24 @@ export interface Enrollment {
     enrolledAt: Timestamp;
     progress?: number; // e.g., percentage completion
 }
+
+
+// --- AI Chat Types ---
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+  error?: boolean;
+}
+
+export interface ChatSession {
+  id: string;
+  userId: string;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
+  title?: string; // Auto-generated from first message
+}
