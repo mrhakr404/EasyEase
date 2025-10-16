@@ -12,7 +12,6 @@ import {
   writeBatch,
   type Firestore,
   type DocumentData,
-  type Query
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -29,42 +28,38 @@ export async function loadChatSession(firestore: Firestore, userId: string): Pro
   const sessionsRef = collection(firestore, `userProfiles/${userId}/chatSessions`);
   const q = query(sessionsRef, orderBy('createdAt', 'desc'), limit(1));
   
-  try {
-    const sessionSnapshot = await getDocs(q);
-    
-    if (sessionSnapshot.empty) {
-      // No sessions exist, so return a new session structure without creating it yet
-      return { sessionId: '', messages: [] };
-    }
-    
-    const sessionDoc = sessionSnapshot.docs[0];
-    const sessionId = sessionDoc.id;
-    const messagesRef = collection(firestore, `userProfiles/${userId}/chatSessions/${sessionId}/messages`);
-    const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
-
-    try {
-      const messagesSnapshot = await getDocs(messagesQuery);
-      const messages = messagesSnapshot.docs.map(doc => doc.data() as Message);
-      return { sessionId, messages };
-    } catch (messagesError) {
-      console.error("Error loading messages:", messagesError);
-      const contextualError = new FirestorePermissionError({
-        path: (messagesQuery as unknown as InternalQuery)._query.path.canonicalString(),
-        operation: 'list',
-      });
-      errorEmitter.emit('permission-error', contextualError);
-      throw contextualError; // Re-throw to be caught by the UI
-    }
-
-  } catch (sessionError) {
-    console.error("Error loading chat session:", sessionError);
+  const sessionSnapshot = await getDocs(q).catch((error) => {
+    console.error("Error loading chat session:", error);
     const contextualError = new FirestorePermissionError({
       path: (q as unknown as InternalQuery)._query.path.canonicalString(),
       operation: 'list',
     });
     errorEmitter.emit('permission-error', contextualError);
-    throw contextualError; // Re-throw to be caught by the UI
+    throw contextualError;
+  });
+    
+  if (sessionSnapshot.empty) {
+    // No sessions exist, so return a new session structure without creating it yet
+    return { sessionId: '', messages: [] };
   }
+  
+  const sessionDoc = sessionSnapshot.docs[0];
+  const sessionId = sessionDoc.id;
+  const messagesRef = collection(firestore, `userProfiles/${userId}/chatSessions/${sessionId}/messages`);
+  const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
+
+  const messagesSnapshot = await getDocs(messagesQuery).catch((error) => {
+    console.error("Error loading messages:", error);
+    const contextualError = new FirestorePermissionError({
+      path: (messagesQuery as unknown as InternalQuery)._query.path.canonicalString(),
+      operation: 'list',
+    });
+    errorEmitter.emit('permission-error', contextualError);
+    throw contextualError;
+  });
+
+  const messages = messagesSnapshot.docs.map(doc => doc.data() as Message);
+  return { sessionId, messages };
 }
 
 /**
@@ -78,16 +73,11 @@ export async function createChatSession(firestore: Firestore, userId: string, fi
   const sessionsRef = collection(firestore, `userProfiles/${userId}/chatSessions`);
   const newSessionData: Omit<ChatSession, 'id'> = {
     userId,
-    startTime: serverTimestamp(),
+    createdAt: serverTimestamp(),
     lastMessage: firstMessage.content,
   };
   
-  try {
-    const sessionDocRef = await addDoc(sessionsRef, newSessionData);
-    const messagesRef = collection(sessionDocRef, 'messages');
-    await addDoc(messagesRef, firstMessage);
-    return sessionDocRef.id;
-  } catch (error) {
+  const sessionDocRef = await addDoc(sessionsRef, newSessionData).catch(error => {
     console.error("Error creating new chat session:", error);
     const contextualError = new FirestorePermissionError({
       path: sessionsRef.path,
@@ -96,7 +86,22 @@ export async function createChatSession(firestore: Firestore, userId: string, fi
     });
     errorEmitter.emit('permission-error', contextualError);
     throw contextualError;
-  }
+  });
+
+  const messagesRef = collection(sessionDocRef, 'messages');
+  
+  await addDoc(messagesRef, firstMessage).catch(error => {
+      console.error("Error adding first message to new chat session:", error);
+      const contextualError = new FirestorePermissionError({
+          path: messagesRef.path,
+          operation: 'create',
+          requestResourceData: firstMessage,
+      });
+      errorEmitter.emit('permission-error', contextualError);
+      throw contextualError;
+  });
+
+  return sessionDocRef.id;
 }
 
 /**
@@ -110,13 +115,13 @@ export async function updateChatSession(firestore: Firestore, userId: string, se
   const sessionRef = doc(firestore, `userProfiles/${userId}/chatSessions/${sessionId}`);
   const messageRef = doc(collection(sessionRef, 'messages'));
 
-  try {
-    const batch = writeBatch(firestore);
-    batch.set(messageRef, message);
-    batch.update(sessionRef, { lastMessage: message.content, lastActivity: serverTimestamp() });
-    await batch.commit();
-  } catch (error) {
+  const batch = writeBatch(firestore);
+  batch.set(messageRef, message);
+  batch.update(sessionRef, { lastMessage: message.content, lastActivity: serverTimestamp() });
+  
+  await batch.commit().catch(error => {
     console.error("Error updating chat session:", error);
+    // Determine which operation failed is tricky in a batch. We'll report the message creation.
     const contextualError = new FirestorePermissionError({
       path: messageRef.path,
       operation: 'create',
@@ -124,5 +129,5 @@ export async function updateChatSession(firestore: Firestore, userId: string, se
     });
     errorEmitter.emit('permission-error', contextualError);
     throw contextualError;
-  }
+  });
 }

@@ -22,7 +22,6 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
 
@@ -32,19 +31,14 @@ export function ChatInterface() {
     const initializeChat = async () => {
       if (!user || !firestore) return;
       setIsLoading(true);
-      try {
-        const { sessionId: loadedSessionId, messages: loadedMessages } = await loadChatSession(firestore, user.uid);
-        setSessionId(loadedSessionId);
-        setMessages(loadedMessages);
-        if (loadedMessages.length === 0) {
-          setIsNewSession(true);
-        }
-      } catch (err) {
-        console.error('Initialization error:', err);
-        setError('Failed to load chat session. Please try refreshing the page.');
-      } finally {
-        setIsLoading(false);
+      // No try/catch here. Errors are now handled globally.
+      const { sessionId: loadedSessionId, messages: loadedMessages } = await loadChatSession(firestore, user.uid);
+      setSessionId(loadedSessionId);
+      setMessages(loadedMessages);
+      if (loadedMessages.length === 0) {
+        setIsNewSession(true);
       }
+      setIsLoading(false);
     };
     initializeChat();
   }, [user, firestore]);
@@ -67,43 +61,41 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
-    setError(null);
-
+    
     let currentSessionId = sessionId;
 
+    // No try/catch here. Errors are handled globally.
+    if (!currentSessionId) {
+      const newSessionId = await createChatSession(firestore, user.uid, userMessage);
+      setSessionId(newSessionId);
+      currentSessionId = newSessionId;
+      setIsNewSession(false);
+    } else {
+      await updateChatSession(firestore, user.uid, currentSessionId, userMessage);
+    }
+
+    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    history.push({ role: 'user', content: userMessage.content });
+
+    // The AI call itself can still fail in other ways
     try {
-      if (!currentSessionId) {
-        const newSessionId = await createChatSession(firestore, user.uid, userMessage);
-        setSessionId(newSessionId);
-        currentSessionId = newSessionId;
-        setIsNewSession(false);
-      } else {
-        await updateChatSession(firestore, user.uid, currentSessionId, userMessage);
-      }
-
-      const history = messages.map(m => ({ role: m.role, content: m.content }));
-      history.push({ role: 'user', content: userMessage.content });
-
       const aiResponse = await chat(history);
-
       const assistantMessage: Message = {
         role: 'assistant',
         content: aiResponse,
         timestamp: Date.now(),
       };
-
-      await updateChatSession(firestore, user.uid, currentSessionId, assistantMessage);
+      await updateChatSession(firestore, user.uid, currentSessionId!, assistantMessage);
       setMessages((prev) => [...prev, assistantMessage]);
-
     } catch (err) {
-      console.error('Message sending error:', err);
-      const errorMessage: Message = {
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: Date.now(),
-        error: true,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+       console.error('AI generation or final update error:', err);
+       const errorMessage: Message = {
+         role: 'assistant',
+         content: 'Sorry, I encountered an error generating a response. Please try again.',
+         timestamp: Date.now(),
+         error: true,
+       };
+       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
