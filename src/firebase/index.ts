@@ -74,3 +74,19 @@ export function useUser() {
 
   return { user, initialized };
 }
+
+/**
+ * A hook to memoize Firestore queries and references.
+ * It adds a `__memo` property to the returned value, which is checked
+ * by `useCollection` and `useDoc` to prevent re-renders.
+ */
+export function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return useMemo(() => {
+        const value = factory();
+        if (value && typeof value === 'object') {
+            (value as any).__memo = true;
+        }
+        return value;
+    }, deps);
+}

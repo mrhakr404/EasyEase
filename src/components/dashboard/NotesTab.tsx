@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useCollection } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,10 +19,10 @@ export function NotesTab() {
   const { user } = useAuth();
   const firestore = useFirestore();
 
-  const notesQuery = useMemo(() => {
+  const notesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(
-        collection(firestore, 'userProfiles', user.uid, 'notes'), 
+        collection(firestore, `userProfiles/${user.uid}/notes`), 
         orderBy('updatedAt', 'desc')
     );
   }, [user, firestore]);
