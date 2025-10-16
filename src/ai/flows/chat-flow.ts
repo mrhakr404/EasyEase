@@ -6,7 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { ChatRequestSchema, type ChatRequest } from '@/lib/types';
+import { ChatRequestSchema, type ChatRequest, MessageDataSchema } from '@/lib/types';
 
 
 const prompt = ai.definePrompt(
@@ -32,21 +32,32 @@ Tutor:
   },
 );
 
-export async function continueChat(request: ChatRequest) {
-  'use server';
-
-  const { response } = await ai.generate({
-    prompt: prompt,
-    input: request,
-    model: 'googleai/gemini-2.5-flash',
-    stream: (chunk) => {
-      // Note: Streaming is not fully implemented on the client yet.
-      // This is a placeholder for future implementation.
+const continueChatFlow = ai.defineFlow(
+    {
+        name: 'continueChatFlow',
+        inputSchema: ChatRequestSchema,
+        outputSchema: MessageDataSchema
     },
-  });
+    async (request) => {
+        const { response } = await ai.generate({
+            prompt: prompt,
+            input: request,
+            model: 'googleai/gemini-2.5-flash',
+            stream: (chunk) => {
+              // Note: Streaming is not fully implemented on the client yet.
+              // This is a placeholder for future implementation.
+            },
+        });
+        
+        return {
+            role: 'model' as const,
+            text: response.text,
+        };
+    }
+);
 
-  return {
-    role: 'model' as const,
-    text: response.text,
-  };
+
+export async function continueChat(request: ChatRequest): Promise<{role: 'model'; text: string}> {
+  'use server';
+  return await continueChatFlow(request);
 }
