@@ -86,7 +86,7 @@ export function CourseManagement() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {courses.map((course) => (
-          <Card key={course.id} className="flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+          <Card key={course.id} className="flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/50">
             <CardHeader>
               <div className="flex justify-between items-start">
                   <CardTitle className="leading-tight">{course.title}</CardTitle>
