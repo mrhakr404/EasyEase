@@ -24,6 +24,7 @@ import { firestore } from '@/lib/firebase/client';
 import type { Message, ChatSession } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { InternalQuery } from '@/firebase/firestore/use-collection';
 
 // Path builders
 const sessionsCol = (userId: string) => `userProfiles/${userId}/chatSessions`;
@@ -108,12 +109,12 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
 /**
  * A helper function to safely execute a getDocs query and handle permissions errors.
  */
-async function safeGetDocs(q: Query<DocumentData> | CollectionReference<DocumentData>) {
+async function safeGetDocs(q: Query<DocumentData>) {
     try {
         return await getDocs(q);
     } catch (error) {
         const contextualError = new FirestorePermissionError({
-            path: q.path,
+            path: (q as unknown as InternalQuery)._query.path.canonicalString(),
             operation: 'list',
         });
         errorEmitter.emit('permission-error', contextualError);
@@ -169,40 +170,36 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
     const sessionRef = sessionDoc(userId, sessionId);
     const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
 
-    try {
-        const sessionSnap = await getDoc(sessionRef).catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: sessionRef.path,
-                operation: 'get',
-            }));
-            throw error;
+    const sessionSnap = await getDoc(sessionRef).catch(error => {
+        const contextualError = new FirestorePermissionError({
+            path: sessionRef.path,
+            operation: 'get',
         });
+        errorEmitter.emit('permission-error', contextualError);
+        throw contextualError;
+    });
 
-        if (!sessionSnap.exists()) {
-            console.warn("Attempted to delete a non-existent chat session.");
-            return;
-        }
-
-        const messagesSnapshot = await safeGetDocs(messagesCollectionRef);
-
-        const batch = writeBatch(firestore);
-
-        messagesSnapshot.forEach(doc => {
-            batch.delete(doc.ref);
-        });
-
-        batch.delete(sessionRef);
-
-        await batch.commit().catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: sessionRef.path,
-                operation: 'delete',
-            }));
-            throw error;
-        });
-
-    } catch (error) {
-        console.error("Failed to delete chat session:", error);
-        throw error;
+    if (!sessionSnap.exists()) {
+        console.warn("Attempted to delete a non-existent chat session.");
+        return;
     }
+    
+    const messagesSnapshot = await safeGetDocs(query(messagesCollectionRef));
+
+    const batch = writeBatch(firestore);
+
+    messagesSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    batch.delete(sessionRef);
+
+    await batch.commit().catch(error => {
+        const contextualError = new FirestorePermissionError({
+            path: sessionRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', contextualError);
+        throw contextualError;
+    });
 }
