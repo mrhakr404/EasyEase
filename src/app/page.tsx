@@ -22,7 +22,7 @@ export default function Home() {
     );
   }
   
-  // If the user is not logged in, or their email is not verified, show the full landing page.
+  // If the user is not logged in, show the full landing page.
   if (!user) {
     return (
       <>
