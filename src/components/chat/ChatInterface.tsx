@@ -23,40 +23,40 @@ export function ChatInterface() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Manages loading state for chat initialization
+  const [isGenerating, setIsGenerating] = useState(false); // Manages AI response generation state
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Effect to scroll to the bottom of the chat on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isGenerating]);
 
+  // Effect to initialize the chat session on component mount
   useEffect(() => {
     const initializeChat = async () => {
       if (!user) return;
 
       setIsLoading(true);
       try {
+        // Try to load the most recent chat session
         const latestSession = await loadChatSession(user.uid);
         if (latestSession) {
           setMessages(latestSession.messages);
           setSessionId(latestSession.id);
         } else {
-          // If no session exists, create one with a welcome message
-          const newSessionId = await createNewChatSession(user.uid, {
-            role: 'assistant',
-            content: 'Hi there! How can I help you today?',
-          });
+          // If no session exists, create a new one with a welcome message
+          const welcomeMessage = { role: 'assistant' as const, content: 'Hi there! How can I help you today?' };
+          const newSessionId = await createNewChatSession(user.uid, welcomeMessage);
           setSessionId(newSessionId);
           setMessages([
             {
-              id: 'initial',
-              role: 'assistant',
-              content: 'Hi there! How can I help you today?',
+              id: 'initial-welcome',
+              ...welcomeMessage,
               timestamp: new Date(),
             },
           ]);
@@ -65,7 +65,7 @@ export function ChatInterface() {
           console.error("Failed to initialize chat:", error);
           toast({
               variant: 'destructive',
-              title: 'Could not load chat',
+              title: 'Could not load chat history',
               description: 'Please check your permissions or refresh the page.'
           })
       } finally {
@@ -77,7 +77,7 @@ export function ChatInterface() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !user || !sessionId) return;
+    if (!input.trim() || !user || !sessionId || isGenerating) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -86,53 +86,49 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
+    // Optimistically update UI with user's message
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsGenerating(true);
 
-    // Non-blocking save to Firestore
+    // Save user message to Firestore non-blockingly
     saveChatMessage(user.uid, sessionId, userMessage);
-
-    const aiMessagePlaceholder: Message = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-    setMessages((prev) => [...prev, aiMessagePlaceholder]);
-
+    
     try {
+      // Prepare history for the AI model
       const history = messages.map((msg) => ({
         role: msg.role === 'user' ? ('user' as const) : ('model' as const),
         content: msg.content,
       }));
 
       const chatInput: ChatInputType = { history, message: input };
+      
+      // Get AI response
       const responseText = await streamChat(chatInput);
       
-      const finalAiMessage: Message = {
-          ...aiMessagePlaceholder,
+      const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
           content: responseText,
-          isStreaming: false,
+          timestamp: new Date(),
       };
 
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === aiMessagePlaceholder.id ? finalAiMessage : msg))
-      );
+      // Update UI with final AI message
+      setMessages((prev) => [...prev, aiMessage]);
 
-      // Non-blocking save to Firestore
-      saveChatMessage(user.uid, sessionId, finalAiMessage);
+      // Save AI message to Firestore non-blockingly
+      saveChatMessage(user.uid, sessionId, aiMessage);
 
     } catch (error) {
-      console.error('Error streaming chat:', error);
+      console.error('Error getting AI response:', error);
       const errorMessage: Message = {
-          ...aiMessagePlaceholder,
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
           content: 'Sorry, I ran into an error. Please try again.',
-          isStreaming: false,
+          timestamp: new Date(),
           error: true,
       };
-      setMessages(prev => prev.map(msg => msg.id === aiMessagePlaceholder.id ? errorMessage : msg));
+      setMessages(prev => [...prev, errorMessage]);
       toast({
         variant: 'destructive',
         title: 'An error occurred',
@@ -144,21 +140,21 @@ export function ChatInterface() {
   };
   
   const handleClearChat = async () => {
-    if (!user || !sessionId || isGenerating) return;
+    if (!user || !sessionId || isGenerating || isLoading) return;
     
     setIsLoading(true);
     try {
         await deleteChatSession(user.uid, sessionId);
-        const newSessionId = await createNewChatSession(user.uid, {
-            role: 'assistant',
-            content: 'Chat cleared. How can I help you now?',
-        });
+        
+        // After deleting, create a new fresh session
+        const welcomeMessage = { role: 'assistant' as const, content: 'Chat cleared. How can I help you now?' };
+        const newSessionId = await createNewChatSession(user.uid, welcomeMessage);
+        
         setSessionId(newSessionId);
         setMessages([
             {
-                id: 'initial-cleared',
-                role: 'assistant',
-                content: 'Chat cleared. How can I help you now?',
+                id: 'cleared-welcome',
+                ...welcomeMessage,
                 timestamp: new Date(),
             },
         ]);
@@ -171,7 +167,7 @@ export function ChatInterface() {
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not clear chat history."
+            description: "Could not clear chat history. Please check permissions."
         })
     } finally {
         setIsLoading(false);
@@ -192,7 +188,7 @@ export function ChatInterface() {
       </header>
       
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-        {isLoading && !messages.length ? (
+        {isLoading ? (
             <div className="flex justify-center items-center h-full">
                 <TypingIndicator />
             </div>
