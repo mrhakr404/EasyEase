@@ -29,6 +29,9 @@ Chat History:
     Tutor: {{{text}}}
   {{/if}}
 {{/each}}
+
+New Question: {{{currentMessage.text}}}
+
 Tutor:
 `,
   },
@@ -36,9 +39,9 @@ Tutor:
 
 export async function continueChat(request: ChatRequest) {
   'use server';
+
   const { response } = await ai.generate({
     prompt: prompt,
-    history: request.history.map((m) => ({ role: m.role, content: [{ text: m.text }]})),
     input: request,
     model: 'googleai/gemini-2.5-flash',
     stream: (chunk) => {

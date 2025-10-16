@@ -13,7 +13,7 @@ import { BrainCircuit, Send, User as UserIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { continueChat } from '@/ai/flows/chat-flow';
 import { saveChatMessage } from '@/lib/firebase/chat';
-import type { ChatMessage } from '@/lib/types';
+import type { ChatMessage, MessageData } from '@/lib/types';
 import ReactMarkdown from 'react-markdown';
 
 const SESSION_ID = 'default_tutor_session'; // In a real app, this would be dynamic
@@ -54,14 +54,14 @@ export function AiTutor() {
     setInput('');
 
     // Optimistically save user message
-    const userMessageData = { role: 'user' as const, text: userMessage };
+    const userMessageData: MessageData = { role: 'user', text: userMessage };
     saveChatMessage(firestore, user.uid, SESSION_ID, userMessageData);
 
     setIsResponding(true);
     
     try {
-        const history = messages ? messages.map(m => ({ role: m.role, text: m.text })) : [];
-        const aiResponse = await continueChat({ history: [...history, userMessageData] });
+        const history: MessageData[] = messages ? messages.map(m => ({ role: m.role, text: m.text })) : [];
+        const aiResponse = await continueChat({ history: history, currentMessage: userMessageData });
         
         // Save AI response
         saveChatMessage(firestore, user.uid, SESSION_ID, aiResponse);

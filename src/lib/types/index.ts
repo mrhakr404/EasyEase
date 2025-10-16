@@ -118,6 +118,7 @@ export type MessageData = z.infer<typeof MessageDataSchema>;
 
 export const ChatRequestSchema = z.object({
   history: z.array(MessageDataSchema),
+  currentMessage: MessageDataSchema,
 });
 export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 
