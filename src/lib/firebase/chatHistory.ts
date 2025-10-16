@@ -18,6 +18,7 @@ import {
   collectionGroup,
   CollectionReference,
   DocumentData,
+  Query,
 } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import type { Message, ChatSession } from '@/lib/types';
@@ -103,10 +104,11 @@ export function saveChatMessage(userId: string, sessionId: string, message: Mess
   return Promise.resolve();
 }
 
+
 /**
  * A helper function to safely execute a getDocs query and handle permissions errors.
  */
-async function safeGetDocs<T extends DocumentData>(q: CollectionReference<T>) {
+async function safeGetDocs(q: Query | CollectionReference) {
     try {
         return await getDocs(q);
     } catch (error) {
@@ -118,6 +120,7 @@ async function safeGetDocs<T extends DocumentData>(q: CollectionReference<T>) {
         throw contextualError;
     }
 }
+
 
 /**
  * Loads the most recent chat session for a user.
@@ -137,8 +140,9 @@ export async function loadChatSession(userId: string): Promise<ChatSession | nul
 
   const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
   const messagesQuery = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
+  
+  const messagesSnapshot = await safeGetDocs(messagesQuery);
 
-  const messagesSnapshot = await safeGetDocs(messagesQuery as CollectionReference<DocumentData>);
   const messages = messagesSnapshot.docs.map(docSnap => {
     const data = docSnap.data();
     return {
@@ -166,29 +170,47 @@ export async function deleteChatSession(userId: string, sessionId: string): Prom
     const messagesCollectionRef = collection(firestore, messagesCol(userId, sessionId));
 
     try {
-        const sessionSnap = await getDoc(sessionRef);
+        // First, check if the session document exists to avoid unnecessary reads on messages.
+        const sessionSnap = await getDoc(sessionRef).catch(error => {
+            // This catch block handles permission errors for the getDoc call itself.
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: sessionRef.path,
+                operation: 'get',
+            }));
+            throw error; // Re-throw to exit the function.
+        });
+
         if (!sessionSnap.exists()) {
             console.warn("Attempted to delete a non-existent chat session.");
             return;
         }
 
-        const messagesSnapshot = await getDocs(messagesCollectionRef);
+        // Now, get all messages to delete them in a batch.
+        const messagesSnapshot = await safeGetDocs(messagesCollectionRef);
+
         const batch = writeBatch(firestore);
 
         messagesSnapshot.forEach(doc => {
             batch.delete(doc.ref);
         });
+
         batch.delete(sessionRef);
 
-        await batch.commit();
+        // Await the commit and handle its specific error.
+        await batch.commit().catch(error => {
+            // If the batch fails, it's a 'write' operation failure.
+            // We'll attribute it to the session path for a clear error message.
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: sessionRef.path,
+                operation: 'delete', // A batch delete is a type of 'delete' operation.
+            }));
+            throw error; // Re-throw to let the caller know it failed.
+        });
+
     } catch (error) {
-        // This single catch block will handle errors from getDoc, getDocs, or commit.
-        // We will create a general "write" (batch) error but point to the session path.
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: sessionRef.path,
-            operation: 'delete', // A batch delete is a type of 'delete' operation.
-        }));
-        // Re-throw the error so the UI can know the operation failed.
+        // This outer catch will handle errors re-thrown from the inner blocks.
+        console.error("Failed to delete chat session:", error);
+        // We re-throw so the UI layer can handle the failed state.
         throw error;
     }
 }
