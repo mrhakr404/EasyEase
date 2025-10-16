@@ -156,39 +156,51 @@ export default function InstituteDashboardPage() {
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="flex items-center gap-2 p-2">
-            <Building className="w-6 h-6 text-primary" />
-            <h2 className="text-lg font-semibold font-headline">Institute Panel</h2>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map(item => (
-              <SidebarMenuItem key={item.name}>
-                <SidebarMenuButton 
-                  isActive={activeComponent === item.name}
-                  onClick={() => setActiveComponent(item.name)}
-                >
-                  <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
-                  {item.name}
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
-          <SidebarSeparator />
-          <UserProfile onProfileClick={() => setActiveComponent('Settings')} />
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <main className="p-8 animate-fade-in h-full overflow-y-auto" data-main-scroll>
-          {renderContent()}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="h-full relative">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 15% 25%, hsl(var(--primary) / 0.1), transparent 30%),
+            radial-gradient(circle at 85% 75%, hsl(var(--primary) / 0.08), transparent 40%)
+          `,
+          backgroundAttachment: 'fixed',
+        }}
+      ></div>
+      <SidebarProvider>
+        <Sidebar>
+          <SidebarHeader>
+            <div className="flex items-center gap-2 p-2">
+              <Building className="w-6 h-6 text-primary" />
+              <h2 className="text-lg font-semibold font-headline">Institute Panel</h2>
+            </div>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {menuItems.map(item => (
+                <SidebarMenuItem key={item.name}>
+                  <SidebarMenuButton 
+                    isActive={activeComponent === item.name}
+                    onClick={() => setActiveComponent(item.name)}
+                  >
+                    <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
+                    {item.name}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarSeparator />
+            <UserProfile onProfileClick={() => setActiveComponent('Settings')} />
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset>
+          <main className="p-8 animate-fade-in h-full overflow-y-auto" data-main-scroll>
+            {renderContent()}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }
