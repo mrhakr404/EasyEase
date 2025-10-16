@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -19,6 +19,7 @@ const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface').th
 const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = () => {
@@ -130,6 +131,8 @@ export default function StudentDashboardPage() {
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
+        case 'Quiz Generator':
+            return <QuizGenerator />;
         case 'Whiteboard':
             return <Whiteboard />;
         case 'Overview':
@@ -144,6 +147,7 @@ export default function StudentDashboardPage() {
     { name: 'AI Chat', icon: BotMessageSquare, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
+    { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
     { name: 'AR/VR Labs', icon: BrainCircuit, color: 'text-teal-400' },
     { name: 'Whiteboard', icon: Users, color: 'text-blue-400' },
   ];
