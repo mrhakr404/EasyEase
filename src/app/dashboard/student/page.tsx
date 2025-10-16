@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
+import { LearningPath } from '@/components/dashboard/LearningPath';
 import Link from 'next/link';
 
 
@@ -81,6 +82,8 @@ export default function StudentDashboardPage() {
             return <Whiteboard />;
         case 'Code Companion':
             return <CodeCompanion />;
+        case 'Learning Path':
+            return <LearningPath />;
         case 'Overview':
         default:
             return <Overview />;
