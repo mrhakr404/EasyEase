@@ -37,38 +37,39 @@ export function ChatInterface() {
 
   useEffect(() => {
     const initializeChat = async () => {
-      if (user) {
-        setIsLoading(true);
-        try {
-          const latestSession = await loadChatSession(user.uid);
-          if (latestSession) {
-            setMessages(latestSession.messages);
-            setSessionId(latestSession.id);
-          } else {
-            const newSessionId = await createNewChatSession(user.uid, {
+      if (!user) return;
+
+      setIsLoading(true);
+      try {
+        const latestSession = await loadChatSession(user.uid);
+        if (latestSession) {
+          setMessages(latestSession.messages);
+          setSessionId(latestSession.id);
+        } else {
+          // If no session exists, create one with a welcome message
+          const newSessionId = await createNewChatSession(user.uid, {
+            role: 'assistant',
+            content: 'Hi there! How can I help you today?',
+          });
+          setSessionId(newSessionId);
+          setMessages([
+            {
+              id: 'initial',
               role: 'assistant',
               content: 'Hi there! How can I help you today?',
-            });
-            setSessionId(newSessionId);
-            setMessages([
-              {
-                id: 'initial',
-                role: 'assistant',
-                content: 'Hi there! How can I help you today?',
-                timestamp: new Date(),
-              },
-            ]);
-          }
-        } catch (error) {
-            console.error("Failed to initialize chat:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Could not load chat',
-                description: 'Please refresh the page to try again.'
-            })
-        } finally {
-            setIsLoading(false);
+              timestamp: new Date(),
+            },
+          ]);
         }
+      } catch (error) {
+          console.error("Failed to initialize chat:", error);
+          toast({
+              variant: 'destructive',
+              title: 'Could not load chat',
+              description: 'Please check your permissions or refresh the page.'
+          })
+      } finally {
+          setIsLoading(false);
       }
     };
     initializeChat();
@@ -89,7 +90,8 @@ export function ChatInterface() {
     setInput('');
     setIsGenerating(true);
 
-    await saveChatMessage(user.uid, sessionId, userMessage);
+    // Non-blocking save to Firestore
+    saveChatMessage(user.uid, sessionId, userMessage);
 
     const aiMessagePlaceholder: Message = {
       id: (Date.now() + 1).toString(),
@@ -119,7 +121,8 @@ export function ChatInterface() {
         prev.map((msg) => (msg.id === aiMessagePlaceholder.id ? finalAiMessage : msg))
       );
 
-      await saveChatMessage(user.uid, sessionId, finalAiMessage);
+      // Non-blocking save to Firestore
+      saveChatMessage(user.uid, sessionId, finalAiMessage);
 
     } catch (error) {
       console.error('Error streaming chat:', error);
@@ -148,7 +151,7 @@ export function ChatInterface() {
         await deleteChatSession(user.uid, sessionId);
         const newSessionId = await createNewChatSession(user.uid, {
             role: 'assistant',
-            content: 'Hi there! How can I help you now?',
+            content: 'Chat cleared. How can I help you now?',
         });
         setSessionId(newSessionId);
         setMessages([
