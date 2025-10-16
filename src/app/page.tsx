@@ -8,6 +8,16 @@ import { Hero } from '@/components/landing/hero';
 export default function Home() {
   const { user, loading } = useAuth();
   
+  // If loading, and we have a user object, AuthProvider is likely handling a redirect.
+  // We can show a loader or null.
+  if (loading && user) {
+     return (
+        <div className="min-h-screen flex items-center justify-center bg-background text-lg">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      );
+  }
+  
   if (!user) {
     return (
       <>
@@ -20,6 +30,11 @@ export default function Home() {
     );
   }
   
-  // AuthProvider is handling redirects, so we just show a loader.
-  return null;
+  // If user is logged in, AuthProvider is redirecting.
+  // Showing a loader here is a good user experience.
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background text-lg">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
 }

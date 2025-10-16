@@ -5,7 +5,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User } from 'firebase/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import type { UserProfile } from '@/lib/types';
 
 // --- Types ---
@@ -21,79 +21,70 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const auth = useFirebaseAuth();
   const firestore = useFirestore();
 
-  const { user, initialized: authInitialized } = useFirebaseAuth();
+  const { user, initialized: authInitialized } = useUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
+  const loading = !authInitialized || profileLoading;
+  
+  const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
+
   useEffect(() => {
+    // If auth isn't initialized, do nothing.
     if (!authInitialized || !firestore) {
       return;
     }
 
-    const isPublicPage = ['/login', '/signup', '/'].includes(pathname);
-
-    // Handle user is not logged in
+    // If there's no user, we are done loading profile.
     if (!user) {
       setProfile(null);
       setProfileLoading(false);
-      if (!isPublicPage && pathname.startsWith('/dashboard')) {
+      // If user is not logged in and is on a protected dashboard page, redirect to login.
+      if (!isPublicPage) {
         router.replace('/login');
       }
       return;
     }
-
-    // User is logged in, fetch profile
+    
+    // User is logged in, but we are still waiting for profile.
     setProfileLoading(true);
     const profileRef = doc(firestore, 'userProfiles', user.uid);
-    const unsubscribe = onSnapshot(
-      profileRef,
-      (docSnap) => {
+    
+    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
         if (docSnap.exists()) {
-          const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
+          const userProfile = docSnap.data() as UserProfile;
           setProfile(userProfile);
           
+          // Profile is loaded, now we can redirect if needed.
           if (userProfile.role) {
             const targetDashboard = `/dashboard/${userProfile.role}`;
-            // Redirect if they are not already on their correct dashboard
-            if (pathname !== targetDashboard && (isPublicPage || pathname.startsWith('/dashboard'))) {
+            if (pathname !== targetDashboard) {
               router.replace(targetDashboard);
             }
           }
         } else {
-          // Profile doesn't exist yet, wait for backend function to create it
+          // This case happens right after signup, before the cloud function runs.
+          // We set profile to null and wait. The listener will re-run when the doc is created.
           setProfile(null);
         }
         setProfileLoading(false);
-      },
-      (error) => {
-        console.error('Error fetching user profile:', error);
+    }, (error) => {
+        console.error("Error fetching user profile:", error);
         setProfile(null);
         setProfileLoading(false);
-        if (auth) {
-          auth.signOut();
-        }
-      }
-    );
+    });
 
     return () => unsubscribe();
-  }, [user, authInitialized, firestore, auth, router, pathname]);
+  }, [user, authInitialized, firestore, router, pathname, isPublicPage]);
 
-  const loading = !authInitialized || (!!user && profileLoading);
 
-  const shouldShowLoader = loading && pathname.startsWith('/dashboard');
+  const value = { user, profile, loading };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
-      {shouldShowLoader ? (
-        <div className="min-h-screen flex items-center justify-center bg-background text-lg">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        children
-      )}
+    <AuthContext.Provider value={value}>
+        {children}
     </AuthContext.Provider>
   );
 };
@@ -105,5 +96,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-    
