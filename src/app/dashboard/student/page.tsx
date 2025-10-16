@@ -19,6 +19,7 @@ import { DailyQuizCard } from '@/components/dashboard/DailyQuizCard';
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface').then(mod => mod.ChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -81,19 +82,23 @@ const Overview = () => {
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                <Card className="transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-red-500/20 rounded-lg border border-red-500/30">
-                                <Calendar className="w-5 h-5 text-red-400" />
+                            <div className="p-2 bg-violet-500/20 rounded-lg border border-violet-500/30">
+                                <TrendingUp className="w-5 h-5 text-violet-400" />
                             </div>
-                            <CardTitle>Assignments Due</CardTitle>
+                            <CardTitle>Predictive Learning Path</CardTitle>
                         </div>
+                        <CardDescription>Your next recommended topics to master.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-red-400 to-red-600">3</p>
-                        <p className="text-sm text-muted-foreground">Next due: Friday</p>
+                        <ul className="space-y-3 text-sm">
+                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> State Management with Zustand</li>
+                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Server Components in Depth</li>
+                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Advanced Animation with Framer Motion</li>
+                        </ul>
                     </CardContent>
                 </Card>
                 <Card className="transition-all duration-300 hover:shadow-green-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
@@ -119,27 +124,8 @@ const Overview = () => {
                     </CardContent>
                 </Card>
                 
-                <DailyQuizCard className="md:col-span-2 lg:col-span-1 xl:col-span-2" />
+                <DailyQuizCard className="md:col-span-2 lg:col-span-3 xl:col-span-4" />
                 
-                <Card className="transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 xl:col-span-2 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    <CardHeader>
-                         <div className="flex items-center gap-3">
-                            <div className="p-2 bg-violet-500/20 rounded-lg border border-violet-500/30">
-                                <TrendingUp className="w-5 h-5 text-violet-400" />
-                            </div>
-                            <CardTitle>Predictive Learning Path</CardTitle>
-                        </div>
-                        <CardDescription>Your next recommended topics to master.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="space-y-3 text-sm">
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> State Management with Zustand</li>
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Server Components in Depth</li>
-                            <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Advanced Animation with Framer Motion</li>
-                        </ul>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     );
@@ -162,6 +148,8 @@ export default function StudentDashboardPage() {
             return <QuizGenerator />;
         case 'Whiteboard':
             return <Whiteboard />;
+        case 'AI Chat':
+            return <ChatInterface />;
         case 'Overview':
         default:
             return <Overview />;
@@ -171,10 +159,10 @@ export default function StudentDashboardPage() {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
+    { name: 'AI Chat', icon: BrainCircuit, color: 'text-teal-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
-    { name: 'AR/VR Labs', icon: BrainCircuit, color: 'text-teal-400' },
     { name: 'Whiteboard', icon: Users, color: 'text-blue-400' },
   ];
 
