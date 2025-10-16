@@ -16,7 +16,7 @@ import Link from 'next/link';
 
 // Mock components for lazy loading
 const MockNotesTab = () => <div className="p-4">Notes Component Loaded</div>;
-const MockWhiteboard = () => <div className="p-4">Whiteboard Loaded</div>;
+const MockWhiteboard = () => <div className="p-4">Whiteboard Component Loaded</div>;
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => Promise.resolve(MockNotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -99,7 +99,7 @@ export default function StudentDashboardPage() {
     { name: 'AI Chat', icon: BotMessageSquare },
     { name: 'Learning Path', icon: Route },
     { name: 'AR/VR Labs', icon: BrainCircuit },
-    { name 'Whiteboard', icon: Users },
+    { name: 'Whiteboard', icon: Users },
     { name: 'Code Companion', icon: BotMessageSquare },
   ];
 
