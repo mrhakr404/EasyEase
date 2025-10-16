@@ -29,21 +29,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
+    // This effect handles both profile fetching and redirection logic.
+
+    // 1. Initial checks for dependencies
     if (!authInitialized || !firestore || !auth) {
       return;
     }
 
+    const isProtectedAuthPage = pathname === '/login' || pathname === '/signup';
+
+    // 2. Handle the "not logged in" case
     if (!user) {
       setProfile(null);
       setProfileLoading(false);
-      // If user is on a protected route and not logged in, redirect
+      // If user is on a protected dashboard route, redirect to login.
       if (pathname.startsWith('/dashboard')) {
         router.replace('/login');
       }
-      return;
+      return; // Stop further execution in this effect run.
     }
 
-    // User is logged in, start fetching profile.
+    // 3. Handle the "logged in" case: fetch profile and redirect if necessary
     setProfileLoading(true);
     const profileRef = doc(firestore, 'userProfiles', user.uid);
 
@@ -53,18 +59,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (docSnap.exists()) {
           const userProfile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
           setProfile(userProfile);
-
-          const targetDashboard = `/dashboard/${userProfile.role}`;
-          const isProtectedAuthPage = pathname === '/login' || pathname === '/signup';
-          const isOnTargetDashboard = pathname === targetDashboard;
           
+          // --- REDIRECTION LOGIC ---
+          // If we have a profile, we can decide where the user should be.
+          const targetDashboard = `/dashboard/${userProfile.role}`;
+          
+          // Redirect if user is on a page they shouldn't be on (e.g., login page, or wrong dashboard)
+          const isOnTargetDashboard = pathname === targetDashboard;
           if (!isOnTargetDashboard && (pathname.startsWith('/dashboard') || isProtectedAuthPage || pathname === '/')) {
              router.replace(targetDashboard);
           }
+
         } else {
-          console.warn(`User profile not found for uid: ${user.uid}. This can happen during signup.`);
+          // This case can happen briefly during signup before the onUserCreate cloud function runs.
+          console.warn(`User profile not found for uid: ${user.uid}. Waiting for creation.`);
           setProfile(null);
-          // If on a dashboard without a profile, redirect away.
+          // If they are on a dashboard without a profile, they will be redirected away.
           if (pathname.startsWith('/dashboard')) {
             router.replace('/login');
           }
@@ -75,23 +85,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error fetching user profile:', error);
         setProfile(null);
         setProfileLoading(false);
-        // On error, redirect away from protected routes.
-        if (pathname.startsWith('/dashboard')) {
-          router.replace('/login');
+        if (auth.signOut) {
+            auth.signOut(); // Sign out on profile fetch error to prevent being stuck.
         }
+        router.replace('/login');
       }
     );
 
     return () => unsubscribe();
   }, [user, authInitialized, firestore, auth, router, pathname]);
 
-  // Overall loading is true if auth isn't checked OR if a user exists but their profile isn't loaded yet.
   const loading = !authInitialized || (!!user && profileLoading);
   
-  // Determine if we should show a loader.
-  // Show loader if we are on a dashboard page, or if we are on the root page with a logged-in user (who will be redirected).
-  const shouldShowLoader = loading && (pathname.startsWith('/dashboard') || (pathname === '/' && !!user));
-
+  // Show a global loader only on dashboard pages while we resolve auth/profile.
+  const shouldShowLoader = loading && pathname.startsWith('/dashboard');
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, authInitialized }}>
