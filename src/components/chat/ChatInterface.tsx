@@ -27,6 +27,7 @@ export function ChatInterface() {
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isGenerating = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -77,6 +78,7 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
+    isGenerating.current = true;
 
     await saveChatMessage(user.uid, sessionId, userMessage);
 
@@ -96,6 +98,9 @@ export function ChatInterface() {
       }));
 
       const responseText = await streamChat({ history, message: input });
+      
+      // Check if a chat clear was requested while waiting
+      if (!isGenerating.current) return;
 
       const finalAiMessage = {
           ...aiMessage,
@@ -111,6 +116,9 @@ export function ChatInterface() {
 
     } catch (error) {
       console.error('Error streaming chat:', error);
+      // Check if a chat clear was requested while waiting
+      if (!isGenerating.current) return;
+
       const errorMessage = {
           ...aiMessage,
           content: 'Sorry, I ran into an error. Please try again.',
@@ -125,12 +133,15 @@ export function ChatInterface() {
       });
     } finally {
       setIsLoading(false);
+      isGenerating.current = false;
     }
   };
   
   const handleClearChat = async () => {
     if (!user || !sessionId) return;
     setIsLoading(true);
+    isGenerating.current = false; // Stop any ongoing generation from updating state
+
     try {
         await deleteChatSession(user.uid, sessionId);
         const newSessionId = await createNew_chat_session(user.uid);
