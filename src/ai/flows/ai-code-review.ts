@@ -30,8 +30,8 @@ export async function aiCodeReview(input: AICodeReviewInput): Promise<AICodeRevi
 
 const prompt = ai.definePrompt({
   name: 'aiCodeReviewPrompt',
-  input: {schema: AICodeReviewInputSchema},
-  output: {schema: AICodeReviewOutputSchema},
+  input: { schema: AICodeReviewInputSchema },
+  output: { schema: AICodeReviewOutputSchema },
   prompt: `You are an expert code reviewer. Analyze the following code snippet and provide suggestions for improvement.
 
 Language: {{{language}}}
