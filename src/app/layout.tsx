@@ -5,6 +5,7 @@ import { ClientCursorEffect } from '@/components/ui/ClientCursorEffect';
 import { FirebaseProvider } from '@/firebase/provider';
 import { ClientOnly } from '@/components/ui/ClientOnly';
 import '@/app/globals.css';
+import '@tldraw/tldraw/tldraw.css';
 
 
 export const metadata: Metadata = {
