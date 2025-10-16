@@ -1,4 +1,4 @@
-
+import { z } from 'zod';
 import type { Timestamp } from 'firebase/firestore';
 
 export interface UserProfile {
@@ -112,3 +112,16 @@ export interface ChatSession {
   updatedAt: Date;
   title?: string; // Auto-generated from first message
 }
+
+// Define the schema for a single message in the chat history
+const MessageSchema = z.object({
+  role: z.enum(['user', 'model']),
+  content: z.string(),
+});
+
+// Define the input schema for the chat flow
+export const ChatInputSchema = z.object({
+  history: z.array(MessageSchema),
+  message: z.string(),
+});
+export type ChatInput = z.infer<typeof ChatInputSchema>;

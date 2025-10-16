@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
-import type { Message } from '@/lib/types';
+import type { Message, ChatInput as ChatInputType } from '@/lib/types';
 import { streamChat } from '@/ai/flows/chat-flow';
 import {
   saveChatMessage,
@@ -106,7 +106,8 @@ export function ChatInterface() {
         content: msg.content,
       }));
 
-      const responseText = await streamChat({ history, message: input });
+      const chatInput: ChatInputType = { history, message: input };
+      const responseText = await streamChat(chatInput);
       
       const finalAiMessage: Message = {
           ...aiMessagePlaceholder,

@@ -7,19 +7,15 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { ChatInputSchema, type Message } from '@/lib/types';
+import type { ChatInput } from '@/lib/types';
 
-// Define the schema for a single message in the chat history
-const MessageSchema = z.object({
+
+// Define the schema for a single message in the chat history for the flow
+const FlowMessageSchema = z.object({
   role: z.enum(['user', 'model']),
   content: z.string(),
 });
-
-// Define the input schema for the chat flow
-export const ChatInputSchema = z.object({
-  history: z.array(MessageSchema),
-  message: z.string(),
-});
-export type ChatInput = z.infer<typeof ChatInputSchema>;
 
 const systemPrompt = `You are a friendly and knowledgeable AI tutor named EnrollEase AI, helping students learn.
 Your goals:
@@ -75,6 +71,7 @@ const chatFlow = ai.defineFlow(
 
 
 // Define the streaming chat function that the client will call
+// This is the ONLY export from this file.
 export async function streamChat(input: ChatInput): Promise<string> {
     const response = await chatFlow(input);
     return response;
