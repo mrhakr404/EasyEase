@@ -7,7 +7,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { McqQuestionSchema, type McqQuestion } from '@/lib/types';
 
 const DailyQuizRequestSchema = z.object({
