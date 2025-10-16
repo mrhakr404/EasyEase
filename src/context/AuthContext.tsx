@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
-    if (!authInitialized || !firestore) {
+    if (!authInitialized || !firestore || !auth) {
       return;
     }
 
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     return () => unsubscribe();
-  }, [user, authInitialized, firestore, router, pathname]);
+  }, [user, authInitialized, firestore, auth, router, pathname]);
 
   // Overall loading is true if auth isn't checked OR if a user exists but their profile isn't loaded yet.
   const loading = !authInitialized || (!!user && profileLoading);
