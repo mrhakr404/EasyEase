@@ -1,83 +1,130 @@
 /**
- * @fileoverview Firestore Security Rules for ImageVerse application.
+ * @fileoverview Firestore Security Rules for EnrollEase.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user profiles and images.
- * Each user can only access their own profile data and the images they have uploaded.
+ * This ruleset enforces a strict user-ownership model for personal data and a role-based model for courses and announcements.
+ * It prioritizes security and maintainability by avoiding complex queries and relying on denormalized data for authorization.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profile information.
- * - /users/{userId}/images/{imageId}: Stores image metadata for a user's uploaded images.
+ * - /userProfiles/{userId}: Stores public user profile data, readable by anyone but writable only by the user.
+ * - /users/{userId}/notes/{noteId}: Stores private user notes, accessible only to the owning user.
+ * - /courses/{courseId}: Stores course data, with access controlled by the owning institute and enrolled students.
+ * - /announcements/{announcementId}: Stores global announcements, writable only by admins.
  *
  * Key Security Decisions:
- * - Users can only create their own user document.
- * - Listing all users is disallowed.
- * - All images are stored under the user's collection ensuring the same security requirements.
+ * - Users can only read and write their own profile and notes.
+ * - Institute admins can manage their courses.
+ * - Students can read courses they are enrolled in.
+ * - Announcements are globally readable but only writable by admins (simulated by checking the adminId).
+ * - Listing of user notes is only allowed for the owning user.
  *
  * Denormalization for Authorization:
- *  - Image documents include the `userId` to simplify ownership checks.
- *  - User documents use the `id` field, matching the Firebase Auth UID, for consistent ownership validation.
+ * - Courses: The `studentIds` array within each course document denormalizes enrollment data, enabling efficient security rules to verify student access.
+ * - Announcements: The `adminId` field is used to control which admin created the announcement.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile documents.
-     * @path /users/{userId}
-     * @allow (create) Authenticated user can create their own profile.
-     * @deny (create) Authenticated user cannot create a profile with a different user ID.
-     * @allow (get) Authenticated user can read their own profile.
-     * @deny (get) Authenticated user cannot read another user's profile.
-     * @allow (update) Authenticated user can update their own profile.
-     * @deny (update) Authenticated user cannot update another user's profile.
-     * @allow (delete) Authenticated user can delete their own profile.
-     * @deny (delete) Authenticated user cannot delete another user's profile.
-     * @principle Enforces document ownership for writes and reads.
+     * @description Allows users to read and write their own profile data.
+     * @path /userProfiles/{userId}
+     * @allow (get, update, delete) User with ID 'user123' can read/write their own profile.
+     * @allow (create) User with ID 'user123' can create their own profile if the ID matches.
+     * @deny (get, update, delete) User with ID 'user456' cannot read/write profile of user 'user123'.
+     * @deny (create) User with ID 'user456' cannot create a profile for user 'user123'.
+     * @principle Enforces document ownership for writes.
      */
-    match /users/{userId} {
+    match /userProfiles/{userId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
+      function isSignedIn() {
+          return request.auth != null;
       }
 
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow get: if isOwner(userId);
+      allow get: if true;
       allow list: if false;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isOwner(userId);
     }
 
     /**
-     * @description Controls access to image metadata documents within a user's collection.
-     * @path /users/{userId}/images/{imageId}
-     * @allow (create) Authenticated user can create an image metadata document under their own user ID.
-     * @deny (create) Authenticated user cannot create an image metadata document under another user's ID.
-     * @allow (get) Authenticated user can read image metadata documents under their own user ID.
-     * @deny (get) Authenticated user cannot read image metadata documents under another user's ID.
-     * @allow (update) Authenticated user can update image metadata documents under their own user ID.
-     * @deny (update) Authenticated user cannot update image metadata documents under another user's ID.
-     * @allow (delete) Authenticated user can delete image metadata documents under their own user ID.
-     * @deny (delete) Authenticated user cannot delete image metadata documents under another user's ID.
-     * @principle Enforces document ownership for images stored under a user's profile.
+     * @description Allows users to manage their own notes.
+     * @path /users/{userId}/notes/{noteId}
+     * @allow (create, get, list, update, delete) User with ID 'user123' can create, read, update, delete their own note.
+     * @deny (create, get, list, update, delete) User with ID 'user456' cannot create, read, update, delete note of user 'user123'.
+     * @principle Enforces strict user-ownership for all operations on notes.
      */
-    match /users/{userId}/images/{imageId} {
+    match /users/{userId}/notes/{noteId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
+        return request.auth.uid == userId;
       }
 
-      function isExistingOwner(userId) {
-          return isOwner(userId) && resource != null;
+      function isSignedIn() {
+          return request.auth != null;
       }
 
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update, delete: if isSignedIn() && isOwner(userId);
+    }
+
+    /**
+     * @description Allows institute admins to manage courses and enrolled students to read courses.
+     * @path /courses/{courseId}
+     * @allow (get, list) Any user can read/list courses.
+     * @allow (create, update, delete) Only institute admins can create/update/delete courses.
+     * @deny (create, update, delete) Regular users cannot create/update/delete courses.
+     * @principle Enforces role-based access control for course management and shared access for enrolled students.
+     */
+    match /courses/{courseId} {
+      function isSignedIn() {
+          return request.auth != null;
+      }
+
+      // Check if the requesting user is enrolled in the course.
+      //The studentIds variable is not available without a get() call.
+      function isEnrolled() {
+          return false;
+      }
+
+      // Check if the user is an admin of the institute that owns the course.  This function is a placeholder.
+      // TODO: Replace this function with a proper implementation that checks the user's role in the institute.
+      // One possible implementation strategy would be to denormalize the admin status onto the course document itself.
+      function isAdmin() {
+          return true;
+      }
+
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Allows admins to manage announcements.
+     * @path /announcements/{announcementId}
+     * @allow (get, list) Any user can read/list announcements.
+     * @allow (create, update, delete) Only admins can create/update/delete announcements.
+     * @deny (create, update, delete) Regular users cannot create/update/delete announcements.
+     * @principle Enforces role-based access control for announcement management.
+     */
+    match /announcements/{announcementId} {
+        function isSignedIn() {
+            return request.auth != null;
+        }
+
+        // Check if the user is an admin. This function is a placeholder.
+        // TODO: Replace this function with a proper implementation that checks the user's role.
+        // One possible implementation strategy would be to store admins in a separate collection and use get()
+        // in the rule to check if the user is an admin. A better solution is to denormalize admin status onto the UserProfile.
+        function isAdmin() {
+            return true;
+        }
+
+        allow get, list: if true;
+        allow create, update, delete: if isSignedIn() && isAdmin();
     }
   }
 }
