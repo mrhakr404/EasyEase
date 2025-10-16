@@ -10,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
 import { LearningPath } from '@/components/dashboard/LearningPath';
-import { ChatInterface } from '@/components/chat/ChatInterface';
 import Link from 'next/link';
 
 
@@ -85,8 +84,6 @@ export default function StudentDashboardPage() {
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
-        case 'AI Chat':
-            return <ChatInterface />;
         case 'Overview':
         default:
             return <Overview />;
@@ -96,7 +93,6 @@ export default function StudentDashboardPage() {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard },
     { name: 'Notes', icon: NotebookText },
-    { name: 'AI Chat', icon: BotMessageSquare },
     { name: 'Learning Path', icon: Route },
     { name: 'AR/VR Labs', icon: BrainCircuit },
     { name: 'Whiteboard', icon: Users },

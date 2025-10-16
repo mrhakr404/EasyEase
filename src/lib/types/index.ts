@@ -91,37 +91,3 @@ export interface Enrollment {
     enrolledAt: Timestamp;
     progress?: number; // e.g., percentage completion
 }
-
-
-// --- AI Chat Types ---
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  error?: boolean;
-}
-
-export interface ChatSession {
-  id: string;
-  userId: string;
-  messages: Message[];
-  createdAt: Date;
-  updatedAt: Date;
-  title?: string; // Auto-generated from first message
-}
-
-// Define the schema for a single message in the chat history
-const MessageSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.string(),
-});
-
-// Define the input schema for the chat flow
-export const ChatInputSchema = z.object({
-  history: z.array(MessageSchema),
-  message: z.string(),
-});
-export type ChatInput = z.infer<typeof ChatInputSchema>;
