@@ -14,7 +14,7 @@ import type { Course } from '@/lib/types';
 
 /**
  * Creates a new course for an institute.
- * This is a non-blocking operation.
+ * This is a non-blocking operation that returns a Promise.
  */
 export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description'>): Promise<void> {
   const coursesCollectionRef = collection(firestore, 'courses');
