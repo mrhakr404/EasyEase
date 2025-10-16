@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const CourseManagement = dynamic(() => import('@/components/dashboard/institute/CourseManagement').then(mod => mod.CourseManagement), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 export default function InstituteDashboardPage() {
@@ -29,6 +30,8 @@ export default function InstituteDashboardPage() {
     switch (activeComponent) {
       case 'Settings':
         return <ProfileSettings />;
+      case 'Course Management':
+        return <CourseManagement />;
       case 'Overview':
       default:
         return (
@@ -70,41 +73,41 @@ export default function InstituteDashboardPage() {
 
               <Card className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
-                  <CardTitle>Course Management</CardTitle>
+                  <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Course Name</TableHead>
-                        <TableHead>Enrolled</TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Course</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="text-right">Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       <TableRow>
+                        <TableCell>John Doe</TableCell>
                         <TableCell>Advanced React</TableCell>
-                        <TableCell>78</TableCell>
-                        <TableCell>Active</TableCell>
+                        <TableCell>Completed Lesson 3</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm">Edit</Button>
+                          Just now
                         </TableCell>
                       </TableRow>
                       <TableRow>
+                        <TableCell>Jane Smith</TableCell>
                         <TableCell>Intro to AI</TableCell>
-                        <TableCell>120</TableCell>
-                        <TableCell>Active</TableCell>
+                        <TableCell>Enrolled</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm">Edit</Button>
+                          5m ago
                         </TableCell>
                       </TableRow>
                       <TableRow>
+                        <TableCell>Sam Wilson</TableCell>
                         <TableCell>UX Design Fundamentals</TableCell>
-                        <TableCell>55</TableCell>
-                        <TableCell>Draft</TableCell>
+                        <TableCell>Submitted Assignment</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm">Edit</Button>
+                          1h ago
                         </TableCell>
                       </TableRow>
                     </TableBody>
