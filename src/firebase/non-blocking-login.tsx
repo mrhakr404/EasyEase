@@ -1,20 +1,28 @@
+
 'use client';
 import {
   Auth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  UserCredential,
 } from 'firebase/auth';
-import { errorEmitter } from './error-emitter';
 
-/** Initiate email/password sign-up (non-blocking). */
-export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<any> {
-  // CRITICAL: Call createUserWithEmailAndPassword. The promise is returned to handle user creation logic.
+/**
+ * Initiates email/password sign-up (non-blocking).
+ * It returns the promise from createUserWithEmailAndPassword so the caller can handle the user credential.
+ * Errors should be caught by the caller.
+ */
+export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
   return createUserWithEmailAndPassword(authInstance, email, password);
 }
 
-/** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<any> {
-  // CRITICAL: Call signInWithEmailAndPassword directly. We return the promise so the UI can handle it.
+/**
+ * Initiates email/password sign-in (non-blocking).
+ * It returns the promise from signInWithEmailAndPassword. The redirection and global state update
+ * should be handled by the onAuthStateChanged listener in AuthContext.
+ * Errors should be caught by the caller.
+ */
+export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
   return signInWithEmailAndPassword(authInstance, email, password);
 }
 

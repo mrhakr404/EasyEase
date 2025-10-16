@@ -4,12 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
-import { 
-  createUserWithEmailAndPassword, 
-  sendPasswordResetEmail, 
-  sendEmailVerification, 
-  signInWithEmailAndPassword 
-} from 'firebase/auth';
+import { sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
+import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
 
 // --- Helper Functions & SVGs ---
 
@@ -153,16 +149,16 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         }
         setIsLoading(true);
         
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // On success, the AuthProvider's onAuthStateChanged listener 
-            // will handle the redirection.
-        } catch (err) {
-            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-            setError(message);
-            setIsLoading(false);
-        }
-        // Don't set isLoading to false on success, because the component will unmount
+        initiateEmailSignIn(auth, email, password)
+            .catch((err) => {
+                const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+                setError(message);
+            })
+            .finally(() => {
+                 // In a non-blocking flow, the loading state is typically handled by a global state listener
+                 // For simplicity here, we'll stop loading on error. On success, the component unmounts.
+                 setIsLoading(false);
+            });
     };
 
     return (
@@ -241,42 +237,42 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         
         setIsLoading(true);
 
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+        initiateEmailSignUp(auth, email, password)
+            .then(async (userCredential) => {
+                const user = userCredential.user;
 
-            await sendEmailVerification(user);
+                await sendEmailVerification(user);
 
-            // Save user profile to Firestore
-            const userProfileRef = doc(firestore, 'userProfiles', user.uid);
-            await setDoc(userProfileRef, {
-                email: user.email,
-                id: user.uid,
-                firstName: '',
-                lastName: '',
-                photoURL: '',
-                role: role,
-                createdAt: serverTimestamp(),
+                // Save user profile to Firestore
+                const userProfileRef = doc(firestore, 'userProfiles', user.uid);
+                await setDoc(userProfileRef, {
+                    email: user.email,
+                    id: user.uid,
+                    firstName: '',
+                    lastName: '',
+                    photoURL: '',
+                    role: role,
+                    createdAt: serverTimestamp(),
+                });
+                
+                setSuccessMessage('Sign up successful! Please check your email to verify your account.');
+                
+                // Sign out the user immediately so they have to verify first
+                await auth.signOut();
+
+                // Switch to login view after a short delay
+                setTimeout(() => {
+                    setAuthView('login');
+                    setSuccessMessage('Please login with your new account.');
+                }, 5000);
+            })
+            .catch((err) => {
+                const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
+                setError(message);
+            })
+            .finally(() => {
+                setIsLoading(false);
             });
-            
-            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
-            setIsLoading(false);
-            
-            // Sign out the user immediately so they have to verify first
-            await auth.signOut();
-
-            // Switch to login view after a short delay
-            setTimeout(() => {
-                setAuthView('login');
-                setSuccessMessage('Please login with your new account.');
-            }, 5000);
-
-
-        } catch (err) {
-            const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-            setError(message);
-            setIsLoading(false);
-        }
     };
     
     return (
@@ -432,3 +428,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
