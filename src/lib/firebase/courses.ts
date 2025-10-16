@@ -14,9 +14,9 @@ import type { Course } from '@/lib/types';
 
 /**
  * Creates a new course for an institute.
- * This is a non-blocking operation that returns a Promise.
+ * This is a non-blocking operation.
  */
-export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description'>): Promise<void> {
+export function createCourse(firestore: Firestore, instituteId: string, data: Pick<Course, 'title' | 'description'>): void {
   const coursesCollectionRef = collection(firestore, 'courses');
   const newCourseData = {
     ...data,
@@ -27,19 +27,15 @@ export function createCourse(firestore: Firestore, instituteId: string, data: Pi
     updatedAt: serverTimestamp(),
   };
 
-  return new Promise((resolve, reject) => {
-    addDoc(coursesCollectionRef, newCourseData)
-      .then(() => resolve())
-      .catch(error => {
-        console.error("Error creating course:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: coursesCollectionRef.path,
-          operation: 'create',
-          requestResourceData: newCourseData,
-        }));
-        reject(error);
-      });
-  });
+  addDoc(coursesCollectionRef, newCourseData)
+    .catch(error => {
+      console.error("Error creating course:", error);
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        path: coursesCollectionRef.path,
+        operation: 'create',
+        requestResourceData: newCourseData,
+      }));
+    });
 }
 
 /**
