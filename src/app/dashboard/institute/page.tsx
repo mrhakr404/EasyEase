@@ -2,15 +2,17 @@
 
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
 import { Building, LayoutDashboard, BarChart3, Users, BookCopy, Settings } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UserProfile } from '@/components/ui/user-profile';
+
 
 const DashboardSkeleton = () => (
-  <div className="flex">
+  <div className="flex h-screen">
     <div className="w-64 p-4 border-r">
       <Skeleton className="h-8 w-32 mb-8" />
       <div className="space-y-4">
@@ -36,7 +38,7 @@ const DashboardSkeleton = () => (
 export default function InstituteDashboardPage() {
   const { user, profile, loading } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !profile?.profileLoaded)) {
     return <DashboardSkeleton />;
   }
 
@@ -88,6 +90,10 @@ export default function InstituteDashboardPage() {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
+        <SidebarFooter>
+          <SidebarSeparator />
+          <UserProfile />
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <main className="p-8">

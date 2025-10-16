@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
 import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UserProfile } from '@/components/ui/user-profile';
+
 
 // Mock components for lazy loading
 const MockNotesTab = () => <div className="p-4">Notes Component Loaded</div>;
@@ -95,11 +97,12 @@ export default function StudentDashboardPage() {
   const { user, profile, loading } = useAuth();
   const [activeComponent, setActiveComponent] = useState('Overview');
 
-  if (loading) {
+  if (loading || (user && !profile?.profileLoaded)) {
     return <DashboardSkeleton />;
   }
 
   if (!user || profile?.role !== 'student') {
+     // The AuthProvider should handle the redirect, but this is a fallback.
     return <DashboardSkeleton />;
   }
   
@@ -153,6 +156,10 @@ export default function StudentDashboardPage() {
             ))}
           </SidebarMenu>
         </SidebarContent>
+         <SidebarFooter>
+          <SidebarSeparator />
+          <UserProfile />
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <main className="p-8 h-full">
