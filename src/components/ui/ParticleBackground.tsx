@@ -128,6 +128,12 @@ export function ParticleBackground({
     let frameId: number;
     
     const animate = () => {
+      // Ensure velocities are initialized before starting animation logic.
+      if (!particlesVelocities.length || !clustersVelocities.length) {
+        frameId = requestAnimationFrame(animate);
+        return;
+      }
+      
       for (let i = 0; i < finalParticleCount; i++) {
         particlesPositions[i * 3 + 1] -= particlesVelocities[i];
         if (particlesPositions[i * 3 + 1] < -7.5) particlesPositions[i * 3 + 1] = 7.5;
