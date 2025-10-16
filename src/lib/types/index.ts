@@ -109,3 +109,14 @@ export interface DailyQuizAttempt {
   isCorrect: boolean;
   attemptedAt: Timestamp;
 }
+
+export const MessageDataSchema = z.object({
+  role: z.enum(['user', 'model']),
+  text: z.string(),
+});
+export type MessageData = z.infer<typeof MessageDataSchema>;
+
+export interface ChatMessage extends MessageData {
+  id: string;
+  createdAt: Timestamp;
+}

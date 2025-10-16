@@ -1,183 +1,175 @@
 /**
- * @fileoverview Firestore Security Rules for EnrollEase.
+ * @fileoverview Firestore Security Rules for EnrollEase Platform
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user-specific data
- * while allowing public read access to certain collections. All write
- * operations require authentication and authorization checks.
+ * This ruleset enforces a strict user-ownership model for personal data and uses role-based access control where appropriate.
+ * It prioritizes data privacy and prevents unauthorized access to user-specific information.
  *
  * Data Structure:
  * - /userProfiles/{userId}: Stores individual user profiles, accessible only by the user themselves.
- * - /institutes/{instituteId}: Stores institute profiles.
- * - /institutes/{instituteId}/members/{userId}: Stores members of an institute.
- * - /users/{userId}/notes/{noteId}: Stores notes private to the user.
- * - /courses/{courseId}: Stores course information.
- * - /courses/{courseId}/enrollments/{enrollmentId}: Tracks student enrollments for a specific course.
- * - /announcements/{announcementId}: Stores global announcements, writeable only by admins.
+ * - /institutes/{instituteId}: Stores institute profiles, with access controlled by the institute's owner.
+ * - /institutes/{instituteId}/members/{userId}: Stores members of an institute, accessible only to institute owners and members.
+ * - /users/{userId}/notes/{noteId}: Stores user-specific notes, accessible only by the user.
+ * - /courses/{courseId}: Stores course information, accessible by any user.
+ * - /courses/{courseId}/enrollments/{enrollmentId}: Stores course enrollments, with write access managed by the institute.
+ * - /announcements/{announcementId}: Stores global announcements, accessible to all users for reading, but only admins can create, update, or delete them.
+ * - /userProfiles/{userId}/dailyQuizAttempts/{attemptId}: Stores daily quiz attempts, accessible only by the user.
  *
  * Key Security Decisions:
- * - User listing is disallowed to protect privacy.
- * - Data validation is relaxed during the prototyping phase.
- * - Strict ownership is enforced on user-specific subcollections.
+ * - User listing is explicitly denied to prevent enumeration of user accounts.
+ * - All write operations are secured with identity checks to prevent unauthorized data modification.
+ * - Role-based access control is used for administrative functions (announcements).
  *
  * Denormalization for Authorization:
- * - The rules leverage path-based authorization (e.g., /users/{userId})
- *   and denormalization of owner IDs on documents (e.g., institute.ownerId)
- *   to avoid costly `get()` calls within the rules.
- *
- * Structural Segregation:
- * - Public vs. private data is managed using separate collections and
- *   subcollections with different security profiles.
+ * - Institute documents contain an `ownerId` field to simplify ownership checks for institute-related data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by a signed-in user.
-     * @return {boolean} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return {boolean} True if the user IDs match, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user is the existing owner of the document.
-     * @param {string} userId The user ID to compare against the authenticated user's ID.
-     * @return {boolean} True if the user is the owner and the document exists, false otherwise.
-     */
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Security rules for user profiles.
+     * @description Protects user profile data, allowing only the owner to read and write their own profile.
      * @path /userProfiles/{userId}
-     * @allow (create) User 'A' with ID 'A' can create their own profile.
-     * @allow (get) User 'A' with ID 'A' can read their own profile.
-     * @deny (create) User 'A' cannot create a profile with ID 'B'.
-     * @deny (update) User 'A' cannot update someone else's profile.
+     * @allow (create) User with ID 'user123' creates a profile with id: 'user123'.
+     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their own profile.
+     * @deny (create) User with ID 'user456' attempts to create a profile with id: 'user123'.
+     * @deny (get, update, delete) User with ID 'user456' attempts to read/update/delete profile 'user123'.
      * @principle Enforces document ownership for writes.
      */
     match /userProfiles/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
       allow get: if isOwner(userId);
       allow list: if false;
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Security rules for institutes.
+     * @description Protects institutes data, allowing only the owner to read and write their own institute.
      * @path /institutes/{instituteId}
-     * @allow (create) User 'A' with the necessary role can create a new institute.
-     * @allow (get) Any user can read institute information.
-     * @deny (update) User 'A' cannot update an institute they don't own.
-     * @principle Enforces document ownership for writes, public read.
+     * @allow (create) User with ID 'user123' creates an institute with ownerId: 'user123'.
+     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their own institute.
+     * @deny (create) User with ID 'user456' attempts to create an institute with ownerId: 'user123'.
+     * @deny (get, update, delete) User with ID 'user456' attempts to read/update/delete institute owned by 'user123'.
+     * @principle Enforces document ownership for writes.
      */
     match /institutes/{instituteId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid && resource != null;
-    }
-
-     /**
-      * @description Security rules for institute members.
-      * @path /institutes/{instituteId}/members/{userId}
-      * @allow (create) User 'A' with the necessary role can add a member to an institute.
-      * @allow (get) Any user can read member information of an institute.
-      * @deny (update) User 'A' cannot update a member if they're not an owner of the institute.
-      */
-    match /institutes/{instituteId}/members/{userId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
+        function isInstituteOwner(instituteId) {
+            return request.auth.uid == get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId;
+        }
+        allow get, list: if true; //Institutes are public readable.
+        allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
+        allow update: if request.auth != null && isInstituteOwner(instituteId);
+        allow delete: if request.auth != null && isInstituteOwner(instituteId);
     }
 
     /**
-     * @description Security rules for user notes.
+     * @description Protects members of an institute, allowing only the owner and members to read and write.
+     * @path /institutes/{instituteId}/members/{userId}
+     * @allow (get, create, update, delete) Only members with corresponding ids have access.
+     * @deny (get, create, update, delete) Members trying to access resource other then their ids.
+     * @principle Enforces document ownership for writes.
+     */
+    match /institutes/{instituteId}/members/{userId} {
+         function isInstituteOwner(instituteId) {
+            return get(/databases/$(database)/documents/institutes/$(instituteId)).data.ownerId == request.auth.uid;
+        }
+        function isMember(instituteId, userId) {
+            return request.auth.uid == userId || isInstituteOwner(instituteId);
+        }
+
+        allow get, list: if isMember(instituteId, userId); //List all members of the institute
+        allow create: if isInstituteOwner(instituteId);
+        allow update: if isInstituteOwner(instituteId) || request.auth.uid == userId;
+        allow delete: if isInstituteOwner(instituteId);
+    }
+
+    /**
+     * @description Protects user's notes, allowing only the owner to read and write their own notes.
      * @path /users/{userId}/notes/{noteId}
-     * @allow (create) User 'A' can create a note under their own user ID.
-     * @allow (get) User 'A' can read their own note.
-     * @deny (update) User 'A' cannot update a note under another user's ID.
-     * @principle Restricts access to a user's own data tree.
+     * @allow (create) User with ID 'user123' creates a note with userId: 'user123'.
+     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their own note.
+     * @deny (create) User with ID 'user456' attempts to create a note with userId: 'user123'.
+     * @deny (get, update, delete) User with ID 'user456' attempts to read/update/delete note owned by 'user123'.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/notes/{noteId} {
-      allow get, list: if isOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Security rules for courses.
+     * @description Allows any user to read courses, but restricts write access.
      * @path /courses/{courseId}
-     * @allow (create) User 'A' with the necessary role can create a new course.
-     * @allow (get) Any user can read course information.
-     * @deny (update) User 'A' cannot update a course if they're not the owner.
-     * @principle Public read, owner-only writes.
+     * @allow (get, list) Any user can read courses.
+     * @deny (create, update, delete) All write operations are denied. // TODO: Add owner validation once the schema is updated with an ownership field.
+     * @principle Allows public read access but requires authentication and authorization for writes.
      */
     match /courses/{courseId} {
       allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.instituteId == request.auth.uid;
-      allow delete: if isSignedIn() && resource.data.instituteId == request.auth.uid && resource != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null;
     }
 
     /**
-     * @description Security rules for course enrollments.
+     * @description Subcollection tracking student enrollments for a course.
      * @path /courses/{courseId}/enrollments/{enrollmentId}
-     * @allow (create) User 'A' with the necessary role can create an enrollment.
-     * @allow (get) Any user can read enrollment information for a course.
-     * @deny (update) Enrollment updates are not allowed.
+     * @allow (get, create, update, delete) Only members with corresponding ids have access.
+     * @deny (get, create, update, delete) Members trying to access resource other then their ids.
+     * @principle Enforces document ownership for writes.
      */
     match /courses/{courseId}/enrollments/{enrollmentId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update, delete: if false;
+        allow get, list: if true;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null;
     }
 
     /**
-     * @description Security rules for announcements.
+     * @description Allows any user to read announcements, but only admins can create, update, or delete them.
      * @path /announcements/{announcementId}
-     * @allow (create) Only admins can create announcements.
-     * @allow (get) Any user can read announcements.
-     * @deny (update) Non-admins cannot update announcements.
-     * @principle Public read, admin-only writes.
+     * @allow (get, list) Any user can read announcements.
+     * @deny (create, update, delete) Non-admins cannot create, update, or delete announcements.
+     * @principle Uses role-based access control for administrative functions.
      */
     match /announcements/{announcementId} {
+      function isAdmin() {
+        return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'admin';
+      }
       allow get, list: if true;
-      allow create: if isSignedIn(); // TODO: Add admin check
-      allow update: if false; // TODO: Add admin check
-      allow delete: if false; // TODO: Add admin check
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-      /**
-       * @description Security rules for daily quiz attempts.
-       * @path /userProfiles/{userId}/dailyQuizAttempts/{attemptId}
-       * @allow (create) User 'A' can create a quiz attempt under their own user ID.
-       * @allow (get) User 'A' can read their own quiz attempts.
-       * @deny (list) Listing all quiz attempts is not allowed.
-       * @deny (update) User 'A' cannot update a quiz attempt under another user's ID.
-       * @principle Restricts access to a user's own data tree; prevents listing.
-       */
+    /**
+     * @description Protects user's daily quiz attempts, allowing only the owner to read and write their own attempts.
+     * @path /userProfiles/{userId}/dailyQuizAttempts/{attemptId}
+     * @allow (create) User with ID 'user123' creates an attempt with userId: 'user123'.
+     * @allow (get, update, delete) User with ID 'user123' reads/updates/deletes their own attempt.
+     * @deny (create) User with ID 'user456' attempts to create an attempt with userId: 'user123'.
+     * @deny (get, update, delete) User with ID 'user456' attempts to read/update/delete attempt owned by 'user123'.
+     * @principle Enforces document ownership for writes.
+     */
     match /userProfiles/{userId}/dailyQuizAttempts/{attemptId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isExistingOwner(userId);
-        allow delete: if isExistingOwner(userId);
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
   }
 }

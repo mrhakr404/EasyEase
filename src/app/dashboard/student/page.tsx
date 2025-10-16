@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles, HelpCircle, FileText } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -24,6 +24,7 @@ const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath')
 const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer').then(mod => mod.PdfSummarizer), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -160,6 +161,8 @@ export default function StudentDashboardPage() {
             return <QuizGenerator />;
         case 'PDF Summarizer':
             return <PdfSummarizer />;
+        case 'AI Tutor':
+            return <AiTutor />;
         case 'Whiteboard':
             return <Whiteboard />;
         case 'Overview':
@@ -171,6 +174,7 @@ export default function StudentDashboardPage() {
   const menuItems = [
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
+    { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
     { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
