@@ -139,6 +139,26 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const handleAuthError = (err) => {
+        let message = 'An unexpected error occurred.';
+        switch (err.code) {
+            case 'auth/user-not-found':
+            case 'auth/invalid-email':
+                message = 'No account found with that email address.';
+                break;
+            case 'auth/wrong-password':
+                message = 'Incorrect password. Please try again.';
+                break;
+            case 'auth/too-many-requests':
+                message = 'Access temporarily disabled due to too many failed login attempts. Please reset your password or try again later.';
+                break;
+            default:
+                message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : message;
+                break;
+        }
+        setError(message);
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -149,10 +169,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
         setIsLoading(true);
         
         initiateEmailSignIn(auth, email, password)
-            .catch((err) => {
-                const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
-                setError(message);
-            })
+            .catch(handleAuthError)
             .finally(() => {
                  setIsLoading(false);
             });
@@ -234,10 +251,9 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
 
         try {
             const userCredential = await initiateEmailSignUp(auth, email, password);
-            const user = userCredential.user;
-            await sendEmailVerification(user);
-            setSuccessMessage('Sign up successful! Please check your email to verify your account. You will be redirected shortly.');
-            // The AuthContext will handle the redirection to the dashboard.
+            await sendEmailVerification(userCredential.user);
+            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
+            // AuthContext will handle redirecting to the dashboard after profile creation.
         } catch (err) {
             const message = err.code ? err.code.replace('auth/', '').replace(/-/g, ' ') : 'An unexpected error occurred.';
             setError(message);
