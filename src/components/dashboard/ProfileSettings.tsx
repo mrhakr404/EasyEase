@@ -10,10 +10,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User, Camera, ShieldCheck, KeyRound, MailCheck, MailWarning, BadgeCheck, AlertTriangle } from 'lucide-react';
 import { updateUserProfile } from '@/lib/firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { uploadProfilePicture } from '@/lib/firebase/storage';
 
 function getInitials(name?: string | null) {
     if (!name) return '?';
@@ -28,6 +29,7 @@ function getInitials(name?: string | null) {
 export function ProfileSettings() {
   const { user, profile, loading: authLoading } = useAppAuth();
   const firebaseAuth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   
   // Personal Info State
@@ -35,6 +37,7 @@ export function ProfileSettings() {
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Password Change State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -60,7 +63,7 @@ export function ProfileSettings() {
       }
       setIsSaving(true);
       try {
-          await updateUserProfile(user.uid, { firstName, lastName, username });
+          await updateUserProfile(firestore, user.uid, { firstName, lastName, username });
           toast({ title: 'Success', description: 'Your profile has been updated.' });
       } catch (error) {
           console.error("Error updating profile:", error);
@@ -123,15 +126,27 @@ export function ProfileSettings() {
     fileInputRef.current?.click();
   }
   
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-        // In a real app, you would upload this file to Firebase Storage
-        // and then update the user's photoURL.
+    if (file && user && firestore) {
+      setIsUploading(true);
+      try {
+        const photoURL = await uploadProfilePicture(user.uid, file);
+        await updateUserProfile(firestore, user.uid, { photoURL });
         toast({
-            title: "Image Selected",
-            description: `${file.name} (Image uploading is not implemented yet)`,
+          title: "Success",
+          description: "Profile picture updated successfully!",
         });
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: "Could not upload your profile picture. Please try again.",
+        });
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -151,10 +166,10 @@ export function ProfileSettings() {
                     <div className="relative">
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                         <Avatar className="h-24 w-24 border-4 border-background/20 cursor-pointer group" onClick={handleAvatarClick}>
-                            <AvatarImage src={user?.photoURL || ''} alt="Profile Picture" />
+                            <AvatarImage src={user?.photoURL || profile?.photoURL || ''} alt="Profile Picture" />
                             <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Camera className="h-8 w-8 text-white" />
+                                {isUploading ? <Loader2 className="h-8 w-8 text-white animate-spin" /> : <Camera className="h-8 w-8 text-white" />}
                             </div>
                         </Avatar>
                     </div>
@@ -290,5 +305,3 @@ export function ProfileSettings() {
     </div>
   );
 }
-
-    
