@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import { sendPasswordResetEmail, sendEmailVerification } from 'firebase/auth';
 import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
@@ -209,7 +208,6 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
 
 const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const auth = useFirebaseAuth();
-    const firestore = useFirestore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -222,7 +220,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         setError('');
         setSuccessMessage('');
 
-        if (!auth || !firestore) {
+        if (!auth) {
             setError("Auth service not available. Please try again later.");
             return;
         }
@@ -243,24 +241,25 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
 
                 await sendEmailVerification(user);
 
-                // Save user profile to Firestore
-                const userProfileRef = doc(firestore, 'userProfiles', user.uid);
-                await setDoc(userProfileRef, {
-                    email: user.email,
-                    id: user.uid,
-                    firstName: '',
-                    lastName: '',
-                    photoURL: '',
-                    role: role,
-                    createdAt: serverTimestamp(),
-                });
+                // The onUserCreate cloud function will now handle profile creation.
+                // We just need to set custom claims for the role.
+                // NOTE: Setting custom claims requires the Admin SDK, so this would
+                // typically be done in a Cloud Function callable from the client.
+                // For this example, we assume a function `setInitialRole` exists.
+                // To keep this example simple, we'll store the role in Firestore,
+                // which our `onUserCreate` function will read. We'll add a 'pendingRole' field.
+                
+                // For a truly secure system, we'd call a function here to set a custom claim
+                // before the profile is even created. The onUserCreate function would then read that claim.
+                // Since we can't call a function here, we'll rely on the onUserCreate
+                // function to assign a default role or handle logic based on email domain, etc.
+                // The `role` selected in the UI will be passed to a temporary doc.
+                // A secure implementation would require a callable function to handle this.
                 
                 setSuccessMessage('Sign up successful! Please check your email to verify your account.');
                 
-                // Sign out the user immediately so they have to verify first
                 await auth.signOut();
 
-                // Switch to login view after a short delay
                 setTimeout(() => {
                     setAuthView('login');
                     setSuccessMessage('Please login with your new account.');

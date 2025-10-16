@@ -1,32 +1,47 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
 
+import * as admin from "firebase-admin";
+import {onUserCreate} from "firebase-functions/v2/auth";
 import {setGlobalOptions} from "firebase-functions";
-import {onRequest} from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+// Initialize Firebase Admin SDK
+admin.initializeApp();
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+// Set global options for all functions
+setGlobalOptions({maxInstances: 10});
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+/**
+ * Triggered when a new user is created.
+ * Creates a corresponding user profile in Firestore.
+ */
+export const createProfile = onUserCreate(async (event) => {
+  const user = event.data;
+  const {uid, email, displayName, photoURL} = user;
+
+  // Default role is 'student'. In a real app, this could be
+  // determined by email domain, a custom claim, etc.
+  const role = "student";
+
+  const userProfile = {
+    id: uid,
+    email,
+    firstName: displayName?.split(" ")[0] || "",
+    lastName: displayName?.split(" ").slice(1).join(" ") || "",
+    photoURL: photoURL || "",
+    role: role,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  try {
+    await admin.firestore().collection("userProfiles").doc(uid).set(userProfile);
+    logger.info(`Successfully created profile for user: ${uid}`);
+    return null;
+  } catch (error) {
+    logger.error(`Error creating profile for user: ${uid}`, error);
+    // Optionally, you could delete the user from Auth to ensure consistency
+    // await admin.auth().deleteUser(uid);
+    return null;
+  }
+});
+
+    
