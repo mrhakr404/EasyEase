@@ -8,19 +8,19 @@ import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
+import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
 
 
 // Mock components for lazy loading
 const MockNotesTab = () => <div className="p-4">Notes Component Loaded</div>;
 const MockChatInterface = () => <div className="p-4">Chat Interface Loaded</div>;
 const MockWhiteboard = () => <div className="p-4">Whiteboard Loaded</div>;
-const MockCodeCompanion = () => <div className="p-4">Code Companion Loaded</div>;
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => Promise.resolve(MockNotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ChatInterface = dynamic(() => Promise.resolve(MockChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const CodeCompanion = dynamic(() => Promise.resolve(MockCodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+
 
 const Overview = () => (
     <>
