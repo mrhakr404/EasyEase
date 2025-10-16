@@ -5,8 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useFirestore } from '@/firebase';
 import { chat } from '@/ai/flows/chat-flow';
 import {
-  createChatSession,
   loadChatSession,
+  createChatSession,
   updateChatSession,
 } from '@/lib/firebase/chatHistory';
 import type { Message } from '@/lib/types';
@@ -31,7 +31,6 @@ export function ChatInterface() {
     const initializeChat = async () => {
       if (!user || !firestore) return;
       setIsLoading(true);
-      // No try/catch here. Errors are now handled globally.
       const { sessionId: loadedSessionId, messages: loadedMessages } = await loadChatSession(firestore, user.uid);
       setSessionId(loadedSessionId);
       setMessages(loadedMessages);
@@ -64,11 +63,9 @@ export function ChatInterface() {
     
     let currentSessionId = sessionId;
 
-    // No try/catch here. Errors are handled globally.
     if (!currentSessionId) {
-      const newSessionId = await createChatSession(firestore, user.uid, userMessage);
-      setSessionId(newSessionId);
-      currentSessionId = newSessionId;
+      currentSessionId = await createChatSession(firestore, user.uid, userMessage);
+      setSessionId(currentSessionId);
       setIsNewSession(false);
     } else {
       await updateChatSession(firestore, user.uid, currentSessionId, userMessage);
@@ -77,7 +74,6 @@ export function ChatInterface() {
     const history = messages.map(m => ({ role: m.role, content: m.content }));
     history.push({ role: 'user', content: userMessage.content });
 
-    // The AI call itself can still fail in other ways
     try {
       const aiResponse = await chat(history);
       const assistantMessage: Message = {
@@ -102,16 +98,16 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border rounded-lg shadow-lg">
+    <div className="flex flex-col h-full bg-card border rounded-lg shadow-lg animate-fade-in">
       <div className="p-4 border-b flex items-center gap-3">
-        <Bot className="w-6 h-6 text-primary" />
+        <Bot className="w-6 h-6 text-violet-400" />
         <h2 className="text-xl font-bold font-headline">AI Assistant</h2>
       </div>
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="p-4 space-y-4">
           {isNewSession && !isLoading && (
             <div className="text-center text-muted-foreground py-8">
-              <Bot className="w-12 h-12 mx-auto mb-4"/>
+              <Bot className="w-12 h-12 mx-auto mb-4 text-violet-300"/>
               <p className="text-lg font-medium">Welcome!</p>
               <p>How can I help you with your studies today?</p>
             </div>

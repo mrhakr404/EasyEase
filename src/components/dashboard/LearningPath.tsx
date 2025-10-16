@@ -41,10 +41,10 @@ const learningPathData = [
 ];
 
 const statusIcons = {
-  Completed: <CheckCircle className="h-6 w-6 text-green-500" />,
-  'In Progress': <Loader className="h-6 w-6 text-blue-500 animate-spin" />,
-  'Next Up': <ArrowRight className="h-6 w-6 text-yellow-500" />,
-  'Not Started': <Circle className="h-6 w-6 text-muted-foreground" />,
+  Completed: <CheckCircle className="h-5 w-5 text-green-400" />,
+  'In Progress': <Loader className="h-5 w-5 text-blue-400 animate-spin" />,
+  'Next Up': <ArrowRight className="h-5 w-5 text-yellow-400" />,
+  'Not Started': <Circle className="h-5 w-5 text-muted-foreground" />,
 };
 
 const statusColors = {
@@ -56,23 +56,23 @@ const statusColors = {
 
 export function LearningPath() {
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full animate-fade-in">
       <div className="flex items-center gap-3 mb-8">
         <h1 className="text-3xl font-bold font-headline">Your Personalized Learning Path</h1>
       </div>
       <div className="relative pl-8">
         {/* Vertical line */}
-        <div className="absolute left-11 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2"></div>
+        <div className="absolute left-10 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2"></div>
         
         <div className="space-y-12">
-            {learningPathData.map((item) => (
-                <div key={item.id} className="relative">
-                    <div className="absolute left-0 top-1.5 -translate-x-1/2">
+            {learningPathData.map((item, index) => (
+                <div key={item.id} className="relative animate-fade-in" style={{animationDelay: `${index * 150}ms`}}>
+                    <div className="absolute left-0 top-1 -translate-x-1/2">
                         <div className="flex items-center justify-center h-8 w-8 rounded-full bg-background border-2 border-primary">
                             {statusIcons[item.status as keyof typeof statusIcons]}
                         </div>
                     </div>
-                    <Card className={cn("ml-12", item.status === 'In Progress' && 'border-primary ring-1 ring-primary shadow-lg')}>
+                    <Card className={cn("ml-12 transition-all duration-300 hover:shadow-lg", item.status === 'In Progress' && 'border-primary ring-1 ring-primary shadow-lg', item.status === 'Completed' && 'bg-card/50')}>
                         <CardHeader>
                             <div className="flex justify-between items-center">
                                 <CardTitle>{item.title}</CardTitle>
@@ -82,9 +82,11 @@ export function LearningPath() {
                             </div>
                             <CardDescription>{item.description}</CardDescription>
                         </CardHeader>
-                        {item.status === 'In Progress' && (
+                        {(item.status === 'In Progress' || item.status === 'Next Up') && (
                             <CardContent>
-                                <Button>Continue Learning</Button>
+                                <Button>
+                                    {item.status === 'In Progress' ? 'Continue Learning' : 'Start Module'}
+                                </Button>
                             </CardContent>
                         )}
                     </Card>

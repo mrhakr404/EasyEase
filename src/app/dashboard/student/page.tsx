@@ -4,29 +4,26 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, BotMessageSquare, Route, BrainCircuit, Users, Code } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
-import { CodeCompanion } from '@/components/dashboard/CodeCompanion';
-import { LearningPath } from '@/components/dashboard/LearningPath';
-import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
-
-// Mock components for lazy loading
-const MockWhiteboard = () => <div className="p-4">Whiteboard Component Loaded</div>;
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const Whiteboard = dynamic(() => Promise.resolve(MockWhiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ChatInterface = dynamic(() => import('@/components/chat/ChatInterface').then(mod => mod.ChatInterface), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const Whiteboard = dynamic(() => Promise.resolve(() => <div className="p-4 rounded-lg bg-card border">Whiteboard Component Loaded</div>), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = () => (
-    <>
+    <div className="animate-fade-in">
         <h1 className="text-3xl font-bold mb-8 font-headline">Student Dashboard</h1>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <Card>
+            <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 <CardHeader>
                     <CardTitle>Current Course</CardTitle>
                 </CardHeader>
@@ -35,7 +32,7 @@ const Overview = () => (
                     <p className="text-sm text-muted-foreground">75% Complete</p>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 <CardHeader>
                     <CardTitle>Assignments Due</CardTitle>
                 </CardHeader>
@@ -44,7 +41,7 @@ const Overview = () => (
                     <p className="text-sm text-muted-foreground">Next due: Friday</p>
                 </CardContent>
             </Card>
-            <Card>
+            <Card className="transition-all duration-300 hover:scale-105 hover:shadow-lg">
                 <CardHeader>
                     <CardTitle>Overall Progress</CardTitle>
                 </CardHeader>
@@ -54,7 +51,7 @@ const Overview = () => (
                 </CardContent>
             </Card>
         </div>
-        <Card>
+        <Card className="transition-all duration-300 hover:shadow-lg">
             <CardHeader>
                 <CardTitle>Predictive Learning Path</CardTitle>
             </CardHeader>
@@ -66,7 +63,7 @@ const Overview = () => (
                 </ul>
             </CardContent>
         </Card>
-    </>
+    </div>
 );
 
 
@@ -78,14 +75,14 @@ export default function StudentDashboardPage() {
     switch (activeComponent) {
         case 'Notes':
             return <NotesTab />;
-        case 'Whiteboard':
-            return <Whiteboard />;
+        case 'AI Chat':
+            return <ChatInterface />;
         case 'Code Companion':
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
-        case 'AI Chat':
-            return <ChatInterface />;
+        case 'Whiteboard':
+            return <Whiteboard />;
         case 'Overview':
         default:
             return <Overview />;
@@ -93,13 +90,13 @@ export default function StudentDashboardPage() {
   };
 
   const menuItems = [
-    { name: 'Overview', icon: LayoutDashboard },
-    { name: 'Notes', icon: NotebookText },
-    { name: 'AI Chat', icon: BotMessageSquare },
-    { name: 'Learning Path', icon: Route },
-    { name: 'AR/VR Labs', icon: BrainCircuit },
-    { name: 'Whiteboard', icon: Users },
-    { name: 'Code Companion', icon: BotMessageSquare },
+    { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
+    { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
+    { name: 'AI Chat', icon: BotMessageSquare, color: 'text-violet-400' },
+    { name: 'Code Companion', icon: Code, color: 'text-green-400' },
+    { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
+    { name: 'AR/VR Labs', icon: BrainCircuit, color: 'text-teal-400' },
+    { name: 'Whiteboard', icon: Users, color: 'text-blue-400' },
   ];
 
   return (
@@ -118,8 +115,9 @@ export default function StudentDashboardPage() {
                     <SidebarMenuButton 
                         isActive={activeComponent === item.name}
                         onClick={() => setActiveComponent(item.name)}
+                        className="group"
                     >
-                        <item.icon />
+                        <item.icon className={cn("transition-colors", item.color, activeComponent === item.name && 'text-primary-foreground')} />
                         {item.name}
                     </SidebarMenuButton>
                 </SidebarMenuItem>

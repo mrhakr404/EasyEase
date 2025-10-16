@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +27,7 @@ export function NotesTab() {
     );
   }, [user, firestore]);
   
-  const { data: notes, isLoading } = useCollection<Note>(notesQuery as any);
+  const { data: notes, isLoading } = useCollection<Note>(notesQuery);
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -56,14 +56,11 @@ export function NotesTab() {
     }
 
     if (selectedNote) {
-        // Update existing note
         updateNote(firestore, user.uid, selectedNote.id, { title, content });
     } else {
-        // Create new note
         createNote(firestore, user.uid, { title, content });
     }
     
-    // Optimistically update UI, though maybe not needed with real-time listener
     setIsEditing(false);
   };
 
@@ -79,11 +76,11 @@ export function NotesTab() {
   };
 
   return (
-    <div className="flex h-full gap-8">
+    <div className="flex h-full gap-8 animate-fade-in">
       {/* Notes List */}
       <Card className="w-1/3 flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2"><NotebookText /> My Notes</CardTitle>
+            <CardTitle className="flex items-center gap-2"><NotebookText className="text-amber-400" /> My Notes</CardTitle>
             <Button size="icon" variant="ghost" onClick={handleNewNote}><PlusCircle /></Button>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
@@ -105,7 +102,7 @@ export function NotesTab() {
               <div
                 key={note.id}
                 onClick={() => handleSelectNote(note)}
-                className={`p-3 rounded-lg cursor-pointer border ${selectedNote?.id === note.id ? 'bg-accent/50 border-accent' : 'hover:bg-muted/50'}`}
+                className={`p-3 rounded-lg cursor-pointer border transition-colors ${selectedNote?.id === note.id ? 'bg-primary/20 border-primary' : 'hover:bg-muted/50'}`}
               >
                 <h3 className="font-semibold truncate">{note.title}</h3>
                 <p className="text-xs text-muted-foreground">
