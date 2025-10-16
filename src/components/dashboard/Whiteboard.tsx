@@ -4,7 +4,7 @@ import { Tldraw } from '@tldraw/tldraw';
 
 export function Whiteboard() {
   return (
-    <div style={{ position: 'fixed', inset: 0 }}>
+    <div className="h-full w-full">
       <Tldraw />
     </div>
   );
