@@ -162,6 +162,21 @@
         "ownerId": { "type": "string" }
       },
       "required": ["id", "name", "ownerId"]
+    },
+    "DailyQuizAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DailyQuizAttempt",
+      "type": "object",
+      "description": "Represents a student's attempt at a daily quiz question.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "question": { "type": "object" },
+        "submittedAnswer": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "attemptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "question", "submittedAnswer", "isCorrect", "attemptedAt"]
     }
   },
   "auth": {
@@ -240,6 +255,16 @@
             "$ref": "#/backend/entities/Announcement"
           },
           "description": "Stores system-wide announcements."
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}/dailyQuizAttempts/{attemptId}",
+        "definition": {
+          "entityName": "DailyQuizAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/DailyQuizAttempt"
+          },
+          "description": "Stores a student's daily quiz attempts. Path-based ownership ensures privacy."
         }
       }
     ],

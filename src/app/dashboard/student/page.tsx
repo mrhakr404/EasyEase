@@ -1,16 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, TrendingUp, Sparkles, HelpCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit, orderBy } from 'firebase/firestore';
+import type { DailyQuizAttempt } from '@/lib/types';
+import { DailyQuizCard } from '@/components/dashboard/DailyQuizCard';
 
 
 // Lazy load heavy components
@@ -22,7 +26,33 @@ const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator
 
 
 const Overview = () => {
-    const { profile } = useAuth();
+    const { user, profile } = useAuth();
+    const firestore = useFirestore();
+
+    const quizAttemptsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return query(
+            collection(firestore, `userProfiles/${user.uid}/dailyQuizAttempts`),
+            orderBy('attemptedAt', 'desc')
+        );
+    }, [user, firestore]);
+
+    const { data: quizAttempts, isLoading: isLoadingAttempts } = useCollection<DailyQuizAttempt>(quizAttemptsQuery);
+    
+    const quizStats = useMemo(() => {
+        if (!quizAttempts) return { accuracy: 0, total: 0 };
+        const total = quizAttempts.length;
+        if (total === 0) return { accuracy: 0, total: 0 };
+        const correct = quizAttempts.filter(qa => qa.isCorrect).length;
+        return {
+            accuracy: Math.round((correct / total) * 100),
+            total,
+            correct
+        }
+    }, [quizAttempts]);
+
 
     return (
         <div className="animate-fade-in">
@@ -77,10 +107,20 @@ const Overview = () => {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">82%</p>
-                        <p className="text-sm text-muted-foreground">Across all courses</p>
+                        <div className="flex items-baseline justify-center gap-2">
+                             <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">82%</p>
+                        </div>
+                        <p className="text-sm text-muted-foreground text-center">Course Completion</p>
+                        <div className="border-t border-border my-3"></div>
+                        <div className="flex items-baseline justify-center gap-2">
+                            {isLoadingAttempts ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">{quizStats.accuracy}%</p>}
+                        </div>
+                        <p className="text-sm text-muted-foreground text-center">Daily Quiz Accuracy</p>
                     </CardContent>
                 </Card>
+                
+                <DailyQuizCard className="md:col-span-2 lg:col-span-1 xl:col-span-2" />
+                
                 <Card className="transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 xl:col-span-2 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
@@ -98,16 +138,6 @@ const Overview = () => {
                             <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Server Components in Depth</li>
                             <li className="flex items-center gap-3"><ArrowRight className="text-violet-400 w-4 h-4 flex-shrink-0" /> Advanced Animation with Framer Motion</li>
                         </ul>
-                    </CardContent>
-                </Card>
-                <Card className="transition-all duration-300 hover:shadow-lg hover:-translate-y-1 xl:col-span-2 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    <CardHeader>
-                        <CardTitle>Quick Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row gap-4">
-                        <Button className="w-full">Continue Lesson</Button>
-                        <Button variant="secondary" className="w-full">View All Courses</Button>
                     </CardContent>
                 </Card>
             </div>

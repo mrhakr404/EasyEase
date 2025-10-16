@@ -92,3 +92,20 @@ export interface Enrollment {
     enrolledAt: Timestamp;
     progress?: number; // e.g., percentage completion
 }
+
+export const McqQuestionSchema = z.object({
+  question: z.string().describe('The question text.'),
+  options: z.array(z.string()).length(4).describe('An array of 4 possible answers.'),
+  answer: z.string().describe('The correct answer from the options array.'),
+});
+export type McqQuestion = z.infer<typeof McqQuestionSchema>;
+
+
+export interface DailyQuizAttempt {
+  id: string;
+  userId: string;
+  question: McqQuestion;
+  submittedAnswer: string;
+  isCorrect: boolean;
+  attemptedAt: Timestamp;
+}
