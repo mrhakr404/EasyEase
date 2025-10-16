@@ -46,6 +46,12 @@ export function initializeFirebase(): FirebaseServices {
   const auth = getAuth(app);
   const firestore = getFirestore(app);
 
+  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    console.log('Connecting to Firebase Emulators');
+    connectAuthEmulator(auth, 'http://localhost:9099');
+    connectFirestoreEmulator(firestore, 'localhost', 8080);
+  }
+
   firebaseServices = { app, auth, firestore };
   return firebaseServices;
 }
