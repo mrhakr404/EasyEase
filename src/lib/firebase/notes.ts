@@ -23,8 +23,6 @@ export function createNote(firestore: Firestore, userId: string, data: Pick<Note
   const notesCollectionRef = collection(firestore, notesPath(userId));
   const newNoteData = {
     ...data,
-    ownerId: userId,
-    privacy: 'private',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };

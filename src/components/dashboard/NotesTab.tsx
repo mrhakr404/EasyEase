@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -19,6 +19,11 @@ export function NotesTab() {
   const { user } = useAuth();
   const firestore = useFirestore();
 
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+
   const notesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(
@@ -29,10 +34,13 @@ export function NotesTab() {
   
   const { data: notes, isLoading } = useCollection<Note>(notesQuery);
 
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  useEffect(() => {
+    // If the selected note is deleted from the list, exit editing mode.
+    if (selectedNote && notes && !notes.find(n => n.id === selectedNote.id)) {
+        setIsEditing(false);
+        setSelectedNote(null);
+    }
+  }, [notes, selectedNote]);
 
   const handleSelectNote = (note: Note) => {
     setSelectedNote(note);
@@ -43,15 +51,14 @@ export function NotesTab() {
 
   const handleNewNote = () => {
     setSelectedNote(null);
-    setTitle('');
+    setTitle('New Note');
     setContent('');
     setIsEditing(true);
   };
 
   const handleSaveNote = () => {
-    if (!user || !firestore) return;
-    if (!title || !content) {
-        // Maybe show a toast message
+    if (!user || !firestore || !title.trim()) {
+        // Maybe show a toast message for empty title
         return;
     }
 
@@ -61,18 +68,17 @@ export function NotesTab() {
         createNote(firestore, user.uid, { title, content });
     }
     
-    setIsEditing(false);
+    // After saving, find the most recently updated note and select it.
+    // This provides better UX than just exiting editing mode.
+    // For a new note, we can't know the ID immediately, so we just exit.
+    if (!selectedNote) {
+      setIsEditing(false);
+    }
   };
 
   const handleDeleteNote = (noteId: string) => {
     if (!user || !firestore) return;
     deleteNote(firestore, user.uid, noteId);
-    if(selectedNote?.id === noteId) {
-        setIsEditing(false);
-        setSelectedNote(null);
-        setTitle('');
-        setContent('');
-    }
   };
 
   return (
@@ -137,18 +143,18 @@ export function NotesTab() {
                         {selectedNote && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" size="icon"><Trash2 /></Button>
+                                    <Button variant="destructive" size="icon"><Trash2 className="w-4 h-4"/></Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        This will permanently delete your note. This action cannot be undone.
+                                        This will permanently delete "{selectedNote.title}". This action cannot be undone.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteNote(selectedNote.id)}>Delete</AlertDialogAction>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteNote(selectedNote.id)}>Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
