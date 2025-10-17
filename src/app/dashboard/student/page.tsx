@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, PenSquare } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -24,7 +24,8 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.DailyQuiz), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const QuizGenerator = dynamic(() => import('@/components/dashboard/student/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -95,14 +96,17 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                             <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
                                 <Zap className="w-5 h-5 text-yellow-400" />
                             </div>
-                            <CardTitle>Daily Quiz Score</CardTitle>
+                            <CardTitle>Latest Quiz Score</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent>
                        {isQuizLoading ? (
                            <Skeleton className="h-10 w-1/2" />
                        ) : lastQuiz ? (
-                           <p className="text-5xl font-bold">{lastQuiz.score}<span className="text-3xl text-muted-foreground">/{lastQuiz.totalQuestions}</span></p>
+                           <>
+                             <p className="text-5xl font-bold">{lastQuiz.score}<span className="text-3xl text-muted-foreground">/{lastQuiz.totalQuestions}</span></p>
+                             <p className="text-sm text-muted-foreground">Topic: {lastQuiz.topic}</p>
+                           </>
                        ) : (
                            <p className="text-muted-foreground">No quiz taken yet.</p>
                        )}
@@ -137,6 +141,8 @@ export default function StudentDashboardPage() {
             return <Whiteboard />;
         case 'Daily Quiz':
             return <DailyQuiz />;
+        case 'Quiz Generator':
+            return <QuizGenerator />;
         case 'Settings':
             return <ProfileSettings />;
         case 'Overview':
@@ -150,6 +156,7 @@ export default function StudentDashboardPage() {
     { name: 'Courses', icon: BookCopy, color: 'text-orange-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
     { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400' },
+    { name: 'Quiz Generator', icon: PenSquare, color: 'text-lime-400' },
     { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
