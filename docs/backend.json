@@ -15,6 +15,10 @@
           "description": "User's email address.",
           "format": "email"
         },
+        "username": {
+          "type": "string",
+          "description": "User's unique username."
+        },
         "firstName": {
           "type": "string",
           "description": "User's first name."
@@ -36,8 +40,7 @@
       "required": [
         "id",
         "email",
-        "firstName",
-        "lastName",
+        "username",
         "role"
       ]
     },
@@ -163,20 +166,18 @@
       },
       "required": ["id", "name", "ownerId"]
     },
-    "DailyQuizAttempt": {
+    "ChatMessage": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "DailyQuizAttempt",
+      "title": "ChatMessage",
       "type": "object",
-      "description": "Represents a student's attempt at a daily quiz question.",
+      "description": "Represents a single message in a user's chat session with the AI tutor.",
       "properties": {
         "id": { "type": "string" },
-        "userId": { "type": "string" },
-        "question": { "type": "object" },
-        "submittedAnswer": { "type": "string" },
-        "isCorrect": { "type": "boolean" },
-        "attemptedAt": { "type": "string", "format": "date-time" }
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userId", "question", "submittedAnswer", "isCorrect", "attemptedAt"]
+      "required": ["id", "role", "text", "createdAt"]
     }
   },
   "auth": {
@@ -258,13 +259,13 @@
         }
       },
       {
-        "path": "/userProfiles/{userId}/dailyQuizAttempts/{attemptId}",
+        "path": "/userProfiles/{userId}/chatSessions/{sessionId}/messages/{messageId}",
         "definition": {
-          "entityName": "DailyQuizAttempt",
-          "schema": {
-            "$ref": "#/backend/entities/DailyQuizAttempt"
-          },
-          "description": "Stores a student's daily quiz attempts. Path-based ownership ensures privacy."
+            "entityName": "ChatMessage",
+            "schema": {
+                "$ref": "#/backend/entities/ChatMessage"
+            },
+            "description": "Stores messages for a specific chat session belonging to a user."
         }
       }
     ],

@@ -104,15 +104,6 @@ export const McqQuestionSchema = z.object({
 export type McqQuestion = z.infer<typeof McqQuestionSchema>;
 
 
-export interface DailyQuizAttempt {
-  id: string;
-  userId: string;
-  question: McqQuestion;
-  submittedAnswer: string;
-  isCorrect: boolean;
-  attemptedAt: Timestamp;
-}
-
 export const MessageDataSchema = z.object({
   role: z.enum(['user', 'model']),
   text: z.string(),

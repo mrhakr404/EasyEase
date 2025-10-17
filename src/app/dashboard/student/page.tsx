@@ -13,8 +13,6 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
-import type { DailyQuizAttempt } from '@/lib/types';
-import { DailyQuizCard } from '@/components/dashboard/DailyQuizCard';
 
 
 // Lazy load heavy components
@@ -31,32 +29,6 @@ const Courses = dynamic(() => import('@/components/dashboard/student/Courses').t
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
     const { user, profile } = useAuth();
-    const firestore = useFirestore();
-
-    const quizAttemptsQuery = useMemoFirebase(() => {
-        if (!user || !firestore) return null;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return query(
-            collection(firestore, `userProfiles/${user.uid}/dailyQuizAttempts`),
-            orderBy('attemptedAt', 'desc')
-        );
-    }, [user, firestore]);
-
-    const { data: quizAttempts, isLoading: isLoadingAttempts } = useCollection<DailyQuizAttempt>(quizAttemptsQuery);
-    
-    const quizStats = useMemo(() => {
-        if (!quizAttempts) return { accuracy: 0, total: 0 };
-        const total = quizAttempts.length;
-        if (total === 0) return { accuracy: 0, total: 0 };
-        const correct = quizAttempts.filter(qa => qa.isCorrect).length;
-        return {
-            accuracy: Math.round((correct / total) * 100),
-            total,
-            correct
-        }
-    }, [quizAttempts]);
-
 
     return (
         <div className="animate-fade-in">
@@ -66,7 +38,7 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                 </h1>
                 <p className="text-muted-foreground">Here's a summary of your learning journey today.</p>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group lg:col-span-2">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
@@ -100,11 +72,6 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                              <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">82%</p>
                         </div>
                         <p className="text-sm text-muted-foreground text-center">Course Completion</p>
-                        <div className="border-t border-border my-3"></div>
-                        <div className="flex items-baseline justify-center gap-2">
-                            {isLoadingAttempts ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">{quizStats.accuracy}%</p>}
-                        </div>
-                        <p className="text-sm text-muted-foreground text-center">Daily Quiz Accuracy</p>
                     </CardContent>
                 </Card>
                 <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
@@ -123,9 +90,7 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                     </CardContent>
                 </Card>
                 
-                <DailyQuizCard className="lg:col-span-3" />
-
-                <Card className="lg:col-span-1 transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                <Card className="lg:col-span-2 transition-all duration-300 hover:shadow-violet-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                      <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
                         <div className="flex items-center gap-3">
