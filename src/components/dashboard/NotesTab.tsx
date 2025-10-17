@@ -112,7 +112,7 @@ export function NotesTab() {
               >
                 <h3 className="font-semibold truncate">{note.title}</h3>
                 <p className="text-xs text-muted-foreground">
-                    Updated {formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true })}
+                    Updated {note.updatedAt ? formatDistanceToNow(note.updatedAt.toDate(), { addSuffix: true }) : 'just now'}
                 </p>
               </div>
             ))}
