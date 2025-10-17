@@ -20,7 +20,6 @@ const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mo
 const CodeCompanion = dynamic(() => import('@/components/dashboard/CodeCompanion').then(mod => mod.CodeCompanion), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const LearningPath = dynamic(() => import('@/components/dashboard/LearningPath').then(mod => mod.LearningPath), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Whiteboard = dynamic(() => import('@/components/dashboard/Whiteboard').then(mod => mod.Whiteboard), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const QuizGenerator = dynamic(() => import('@/components/dashboard/QuizGenerator').then(mod => mod.QuizGenerator), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer').then(mod => mod.PdfSummarizer), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -126,8 +125,6 @@ export default function StudentDashboardPage() {
             return <CodeCompanion />;
         case 'Learning Path':
             return <LearningPath />;
-        case 'Quiz Generator':
-            return <QuizGenerator />;
         case 'PDF Summarizer':
             return <PdfSummarizer />;
         case 'AI Tutor':
@@ -149,7 +146,6 @@ export default function StudentDashboardPage() {
     { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
-    { name: 'Quiz Generator', icon: Sparkles, color: 'text-yellow-400' },
     { name: 'PDF Summarizer', icon: FileText, color: 'text-orange-400' },
     { name: 'Whiteboard', icon: Spline, color: 'text-blue-400' },
     { name: 'Settings', icon: Settings, color: 'text-slate-400' },
