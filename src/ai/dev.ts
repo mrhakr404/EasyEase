@@ -2,6 +2,5 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/ai-code-review.ts';
-import '@/ai/flows/chat-flow.ts';
-import '@/ai/flows/daily-quiz-flow.ts';
+// This file is now only for client-side development if needed.
+// Server-side flows have been moved to src/ai/index.ts
