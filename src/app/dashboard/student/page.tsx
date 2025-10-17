@@ -13,7 +13,6 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
-import { DailyQuiz } from '@/components/dashboard/student/DailyQuiz';
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -57,7 +56,6 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                     </CardContent>
                 </Card>
 
-                <DailyQuiz courseTopic="Advanced React" />
                 
                 <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                      <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>

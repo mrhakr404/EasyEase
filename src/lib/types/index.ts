@@ -111,5 +111,3 @@ export interface ChatMessage extends MessageData {
   id: string;
   createdAt: Timestamp;
 }
-
-export * from './quiz';
