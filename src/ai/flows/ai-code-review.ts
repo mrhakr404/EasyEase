@@ -24,10 +24,6 @@ const AICodeReviewOutputSchema = z.object({
 });
 export type AICodeReviewOutput = z.infer<typeof AICodeReviewOutputSchema>;
 
-export async function aiCodeReview(input: AICodeReviewInput): Promise<AICodeReviewOutput> {
-  return aiCodeReviewFlow(input);
-}
-
 const aiCodeReviewPrompt = ai.definePrompt({
   name: 'aiCodeReviewPrompt',
   input: { schema: AICodeReviewInputSchema },
@@ -58,3 +54,7 @@ const aiCodeReviewFlow = ai.defineFlow(
     return output;
   }
 );
+
+export async function aiCodeReview(input: AICodeReviewInput): Promise<AICodeReviewOutput> {
+  return aiCodeReviewFlow(input);
+}

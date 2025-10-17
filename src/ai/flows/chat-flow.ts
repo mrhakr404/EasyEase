@@ -5,7 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { ChatRequestSchema, type ChatRequest, type MessageData } from '@/lib/types';
+import { type ChatRequest, type MessageData } from '@/lib/types';
 import { z } from 'zod';
 
 const tutorPrompt = ai.definePrompt(
