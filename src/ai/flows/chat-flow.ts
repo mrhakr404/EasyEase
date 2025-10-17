@@ -33,9 +33,12 @@ Tutor:
 
 export async function continueChat(request: ChatRequest): Promise<MessageData> {
   const response = await ai.generate({
-    prompt: tutorPrompt,
+    prompt: tutorPrompt.prompt, // Use the rendered prompt string
     history: request.history.map(m => ({role: m.role, content: [{text: m.text}]})),
-    input: request.currentMessage.text,
+    input: {
+        history: request.history,
+        currentMessage: request.currentMessage
+    }
   });
 
   const text = response.text;
