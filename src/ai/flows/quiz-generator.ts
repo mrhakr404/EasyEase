@@ -41,7 +41,7 @@ const quizGeneratorFlow = ai.defineFlow(
     outputSchema: QuizSchema,
   },
   async (input) => {
-    const { output } = await ai.run(quizPrompt, input);
+    const { output } = await quizPrompt(input);
     if (!output) {
       throw new Error('Failed to generate quiz');
     }

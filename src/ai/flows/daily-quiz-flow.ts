@@ -7,14 +7,14 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import { z } from 'genkit';
 import { McqQuestionSchema, type McqQuestion } from '@/lib/types';
 
 const DailyQuizRequestSchema = z.object({
   topic: z.string().describe('The topic for the quiz question (e.g., "React Hooks")'),
 });
 
-const dailyQuizPrompt = ai.definePrompt({
+const prompt = ai.definePrompt({
   name: 'dailyQuizPrompt',
   input: { schema: DailyQuizRequestSchema },
   output: { schema: McqQuestionSchema },
@@ -37,7 +37,7 @@ const dailyQuizFlow = ai.defineFlow(
     outputSchema: McqQuestionSchema,
   },
   async (input) => {
-    const { output } = await ai.run(dailyQuizPrompt, input);
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error('Failed to generate daily quiz question');
     }

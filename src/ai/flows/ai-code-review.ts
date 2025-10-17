@@ -3,7 +3,7 @@
 /**
  * @fileOverview An AI-powered code review tool for students.
  *
- * - aiCodeReview - A function that handles the code review process.
+ * - aiCodeReview - a function that handles the code review process.
  * - AICodeReviewInput - The input type for the aiCodeReview function.
  * - AICodeReviewOutput - The return type for the aiCodeReview function.
  */
@@ -51,7 +51,7 @@ const aiCodeReviewFlow = ai.defineFlow(
     outputSchema: AICodeReviewOutputSchema,
   },
   async (input) => {
-    const { output } = await ai.run(aiCodeReviewPrompt, input);
+    const { output } = await aiCodeReviewPrompt(input);
     if (!output) {
       throw new Error("AI response was empty.");
     }
