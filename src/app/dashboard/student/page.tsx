@@ -23,7 +23,7 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.DailyQuiz), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.default), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
