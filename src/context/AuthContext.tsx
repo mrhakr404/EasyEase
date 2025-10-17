@@ -58,15 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(userProfile);
           
           // Profile is loaded, now we can redirect if needed.
-          if (userProfile.role) {
+          if (userProfile.role && !pathname.startsWith('/dashboard')) {
             const targetDashboard = `/dashboard/${userProfile.role}`;
-            if (pathname !== targetDashboard) {
-              router.replace(targetDashboard);
-            }
+             if (pathname !== targetDashboard) {
+               router.replace(targetDashboard);
+             }
           }
         } else {
           // This case happens right after signup, before the cloud function runs.
-          // We set profile to null and wait. The listener will re-run when the doc is created.
+          // The signup form now handles redirection, so we can just wait.
           setProfile(null);
         }
         setProfileLoading(false);

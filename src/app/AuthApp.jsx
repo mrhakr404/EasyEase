@@ -3,15 +3,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth as useFirebaseAuth } from '@/firebase';
-import { 
-    sendPasswordResetEmail, 
+import {
+    sendPasswordResetEmail,
     sendEmailVerification,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword 
+    createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useRouter } from 'next/navigation';
+
 
 // --- Helper Functions & SVGs ---
 
@@ -234,6 +236,7 @@ const LoginForm = ({ setError, onForgotPasswordClick }) => {
 
 const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const auth = useFirebaseAuth();
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -281,13 +284,26 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         setIsLoading(true);
 
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password, { role });
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Call the cloud function to set the role
+            const functions = getFunctions(auth.app);
+            const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
+            await setInitialUserRole({ uid: user.uid, role: role });
+            
+            // Send verification email
             await sendEmailVerification(userCredential.user);
-            setSuccessMessage('Sign up successful! Please check your email to verify your account. You will be redirected shortly.');
-            // AuthContext will handle redirecting to the dashboard after the backend function creates the profile.
+            
+            setSuccessMessage('Sign up successful! Please check your email to verify your account. Redirecting...');
+
+            // Explicitly redirect after everything is done
+            setTimeout(() => {
+                router.replace(`/dashboard/${role}`);
+            }, 2000);
+
         } catch (err) {
             handleAuthError(err);
-        } finally {
             setIsLoading(false);
         }
     };
@@ -301,7 +317,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                     onValueChange={setRole}
                     className="grid grid-cols-2 gap-4"
                 >
-                    <div>
+                    <div >
                         <RadioGroupItem value="student" id="role-student" className="peer sr-only" />
                         <Label
                             htmlFor="role-student"
@@ -310,7 +326,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                             Student
                         </Label>
                     </div>
-                     <div>
+                     <div >
                         <RadioGroupItem value="institute" id="role-institute" className="peer sr-only" />
                         <Label
                             htmlFor="role-institute"
@@ -454,5 +470,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
