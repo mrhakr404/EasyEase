@@ -9,6 +9,8 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword 
 } from 'firebase/auth';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 // --- Helper Functions & SVGs ---
 
@@ -235,6 +237,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [role, setRole] = useState('student');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleAuthError = (err) => {
@@ -277,7 +280,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
         setIsLoading(true);
 
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password, { role });
             await sendEmailVerification(userCredential.user);
             setSuccessMessage('Sign up successful! Please check your email to verify your account. You will be redirected shortly.');
             // AuthContext will handle redirecting to the dashboard after the backend function creates the profile.
@@ -323,6 +326,26 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 icon={<LockIcon className="w-5 h-5 text-gray-400" />}
                 autoComplete="new-password"
             />
+
+            <RadioGroup
+                defaultValue="student"
+                onValueChange={setRole}
+                className="flex items-center space-x-4"
+              >
+                <Label className="text-white">I am a:</Label>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="student" id="role-student" />
+                  <Label htmlFor="role-student" className="text-white">
+                    Student
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="institute" id="role-institute" />
+                  <Label htmlFor="role-institute" className="text-white">
+                    Institute
+                  </Label>
+                </div>
+            </RadioGroup>
 
             <button
                 type="submit"
@@ -423,5 +446,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
