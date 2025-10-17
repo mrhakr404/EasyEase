@@ -293,6 +293,29 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
     
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
+             <div className="space-y-3">
+                <Label className="text-base text-white">I am a:</Label>
+                <RadioGroup
+                    defaultValue="student"
+                    onValueChange={setRole}
+                    className="flex items-center gap-4"
+                >
+                    <Label
+                    htmlFor="role-student"
+                    className="flex-1 flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
+                    >
+                    <RadioGroupItem value="student" id="role-student" className="sr-only" />
+                    <span className="text-white font-medium">Student</span>
+                    </Label>
+                    <Label
+                    htmlFor="role-institute"
+                    className="flex-1 flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
+                    >
+                    <RadioGroupItem value="institute" id="role-institute" className="sr-only" />
+                    <span className="text-white font-medium">Institute</span>
+                    </Label>
+                </RadioGroup>
+             </div>
             <InputField
                 id="signup-email"
                 type="email"
@@ -326,26 +349,6 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 icon={<LockIcon className="w-5 h-5 text-gray-400" />}
                 autoComplete="new-password"
             />
-
-            <RadioGroup
-                defaultValue="student"
-                onValueChange={setRole}
-                className="flex items-center space-x-4"
-              >
-                <Label className="text-white">I am a:</Label>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="student" id="role-student" />
-                  <Label htmlFor="role-student" className="text-white">
-                    Student
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="institute" id="role-institute" />
-                  <Label htmlFor="role-institute" className="text-white">
-                    Institute
-                  </Label>
-                </div>
-            </RadioGroup>
 
             <button
                 type="submit"
@@ -446,3 +449,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
