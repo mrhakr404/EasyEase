@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 // --- Helper Functions & SVGs ---
 
@@ -298,26 +299,23 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                 <RadioGroup
                     value={role}
                     onValueChange={setRole}
-                    className="flex items-center gap-4"
+                    className="grid grid-cols-2 gap-4"
                 >
-                    <div className="flex-1">
-                        <RadioGroupItem value="student" id="role-student" className="sr-only" />
-                        <Label
-                            htmlFor="role-student"
-                            className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
-                        >
-                            <span className="text-white font-medium">Student</span>
-                        </Label>
-                    </div>
-                    <div className="flex-1">
-                        <RadioGroupItem value="institute" id="role-institute" className="sr-only" />
-                        <Label
-                            htmlFor="role-institute"
-                            className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
-                        >
-                            <span className="text-white font-medium">Institute</span>
-                        </Label>
-                    </div>
+                    <RadioGroupItem value="student" id="role-student" className="peer sr-only" />
+                    <Label
+                        htmlFor="role-student"
+                        className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors peer-data-[state=checked]:bg-primary/20 peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary"
+                    >
+                        <span className="text-white font-medium">Student</span>
+                    </Label>
+
+                    <RadioGroupItem value="institute" id="role-institute" className="peer sr-only" />
+                    <Label
+                        htmlFor="role-institute"
+                        className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors peer-data-[state=checked]:bg-primary/20 peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary"
+                    >
+                        <span className="text-white font-medium">Institute</span>
+                    </Label>
                 </RadioGroup>
              </div>
             <InputField
@@ -453,5 +451,3 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
-
-    
