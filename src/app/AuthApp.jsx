@@ -296,24 +296,28 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
              <div className="space-y-3">
                 <Label className="text-base text-white">I am a:</Label>
                 <RadioGroup
-                    defaultValue="student"
+                    value={role}
                     onValueChange={setRole}
                     className="flex items-center gap-4"
                 >
-                    <Label
-                    htmlFor="role-student"
-                    className="flex-1 flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
-                    >
-                    <RadioGroupItem value="student" id="role-student" className="sr-only" />
-                    <span className="text-white font-medium">Student</span>
-                    </Label>
-                    <Label
-                    htmlFor="role-institute"
-                    className="flex-1 flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
-                    >
-                    <RadioGroupItem value="institute" id="role-institute" className="sr-only" />
-                    <span className="text-white font-medium">Institute</span>
-                    </Label>
+                    <div className="flex-1">
+                        <RadioGroupItem value="student" id="role-student" className="sr-only" />
+                        <Label
+                            htmlFor="role-student"
+                            className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
+                        >
+                            <span className="text-white font-medium">Student</span>
+                        </Label>
+                    </div>
+                    <div className="flex-1">
+                        <RadioGroupItem value="institute" id="role-institute" className="sr-only" />
+                        <Label
+                            htmlFor="role-institute"
+                            className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors data-[state=checked]:bg-primary/20 data-[state=checked]:border-primary"
+                        >
+                            <span className="text-white font-medium">Institute</span>
+                        </Label>
+                    </div>
                 </RadioGroup>
              </div>
             <InputField
