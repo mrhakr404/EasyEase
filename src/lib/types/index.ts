@@ -112,16 +112,4 @@ export interface ChatMessage extends MessageData {
   createdAt: Timestamp;
 }
 
-export const McqQuestionSchema = z.object({
-  question: z.string().describe('The question text.'),
-  options: z
-    .array(z.string())
-    .length(4)
-    .describe('An array of 4 possible answers.'),
-  answer: z.string().describe('The correct answer from the options array.'),
-  explanation: z
-    .string()
-    .optional()
-    .describe('A brief explanation for why the answer is correct.'),
-});
-export type McqQuestion = z.infer<typeof McqQuestionSchema>;
+export * from './quiz';

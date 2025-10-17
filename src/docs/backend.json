@@ -297,5 +297,3 @@
     "reasoning": "The Firestore structure uses a hybrid of flat and nested collections. Root collections like 'users', 'institutes', and 'courses' allow for simple, scalable queries. Nested subcollections like 'institutes/{instituteId}/members' and 'courses/{courseId}/enrollments' are used for data that is tightly coupled to its parent, ensuring clear ownership and enabling more granular security rules. This balances query flexibility with data scoping and security."
   }
 }
-
-    

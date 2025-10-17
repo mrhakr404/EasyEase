@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
-
+import { DailyQuiz } from '@/components/dashboard/student/DailyQuiz';
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -56,23 +56,9 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                         </div>
                     </CardContent>
                 </Card>
-                <Card className="transition-all duration-300 hover:shadow-green-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
-                     <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-500/20 rounded-lg border border-green-500/30">
-                                <Target className="w-5 h-5 text-green-400" />
-                            </div>
-                            <CardTitle>Overall Progress</CardTitle>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-baseline justify-center gap-2">
-                             <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-green-400 to-green-600">82%</p>
-                        </div>
-                        <p className="text-sm text-muted-foreground text-center">Course Completion</p>
-                    </CardContent>
-                </Card>
+
+                <DailyQuiz courseTopic="Advanced React" />
+                
                 <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                      <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>

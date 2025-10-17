@@ -4,3 +4,4 @@ config();
 
 import '@/ai/flows/ai-code-review.ts';
 import '@/ai/flows/chat-flow.ts';
+import '@/ai/flows/daily-quiz-flow.ts';
