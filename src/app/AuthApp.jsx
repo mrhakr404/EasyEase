@@ -6,7 +6,8 @@ import { useAuth as useFirebaseAuth } from '@/firebase';
 import {
     sendPasswordResetEmail,
     sendEmailVerification,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -295,12 +296,9 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             // Send verification email
             await sendEmailVerification(userCredential.user);
             
-            setSuccessMessage('Sign up successful! Please check your email to verify your account. Redirecting...');
+            setSuccessMessage('Sign up successful! Please check your email to verify your account.');
 
-            // Explicitly redirect after everything is done
-            setTimeout(() => {
-                router.replace(`/dashboard/${role}`);
-            }, 2000);
+            // The AuthProvider will handle the redirect to the correct dashboard.
 
         } catch (err) {
             handleAuthError(err);
@@ -317,7 +315,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                     onValueChange={setRole}
                     className="grid grid-cols-2 gap-4"
                 >
-                    <div >
+                    <div>
                         <RadioGroupItem value="student" id="role-student" className="peer sr-only" />
                         <Label
                             htmlFor="role-student"
@@ -326,7 +324,7 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                             Student
                         </Label>
                     </div>
-                     <div >
+                     <div>
                         <RadioGroupItem value="institute" id="role-institute" className="peer sr-only" />
                         <Label
                             htmlFor="role-institute"
