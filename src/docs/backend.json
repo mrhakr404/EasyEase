@@ -178,22 +178,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "role", "text", "createdAt"]
-    },
-    "DailyQuizAttempt": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "title": "DailyQuizAttempt",
-        "type": "object",
-        "description": "Stores a student's attempt at a daily quiz.",
-        "properties": {
-            "id": { "type": "string" },
-            "userId": { "type": "string" },
-            "quizTitle": { "type": "string" },
-            "course": { "type": "string" },
-            "score": { "type": "number" },
-            "total": { "type": "number" },
-            "attemptedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["id", "userId", "quizTitle", "course", "score", "total", "attemptedAt"]
     }
   },
   "auth": {
@@ -282,16 +266,6 @@
                 "$ref": "#/backend/entities/ChatMessage"
             },
             "description": "Stores messages for a specific chat session belonging to a user."
-        }
-      },
-      {
-        "path": "/userProfiles/{userId}/quizAttempts/{attemptId}",
-        "definition": {
-            "entityName": "DailyQuizAttempt",
-            "schema": {
-                "$ref": "#/backend/entities/DailyQuizAttempt"
-            },
-            "description": "Stores a user's attempt at a daily quiz."
         }
       }
     ],

@@ -23,7 +23,6 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.DailyQuiz), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -38,47 +37,41 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                 <p className="text-muted-foreground">Here's a summary of your learning journey today.</p>
             </div>
             
-            <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                     <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
-                                    <GraduationCap className="w-5 h-5 text-primary" />
-                                </div>
-                                <CardTitle>Current Course</CardTitle>
+            <div className="grid lg:grid-cols-2 gap-6">
+                <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+                                <GraduationCap className="w-5 h-5 text-primary" />
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-2xl font-bold mb-2">Advanced React</p>
-                            <div className="flex items-center gap-4">
-                                <Progress value={75} className="w-full" />
-                                <span className="text-sm font-semibold text-primary">75%</span>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            <CardTitle>Current Course</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-bold mb-2">Advanced React</p>
+                        <div className="flex items-center gap-4">
+                            <Progress value={75} className="w-full" />
+                            <span className="text-sm font-semibold text-primary">75%</span>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                        <CardHeader>
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-red-500/20 rounded-lg border border-red-500/30">
-                                    <Calendar className="w-5 h-5 text-red-400" />
-                                </div>
-                                <CardTitle>Assignments Due</CardTitle>
+                <Card className="transition-all duration-300 hover:shadow-red-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-red-500/20 rounded-lg border border-red-500/30">
+                                <Calendar className="w-5 h-5 text-red-400" />
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-red-400 to-red-600">3</p>
-                            <p className="text-sm text-muted-foreground">Next due: Friday</p>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                 <div className="lg:col-span-1">
-                    <DailyQuiz />
-                 </div>
+                            <CardTitle>Assignments Due</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-red-400 to-red-600">3</p>
+                        <p className="text-sm text-muted-foreground">Next due: Friday</p>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
