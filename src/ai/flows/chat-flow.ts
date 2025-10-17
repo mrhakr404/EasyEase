@@ -35,7 +35,8 @@ export async function continueChat(request: ChatRequest): Promise<MessageData> {
   const response = await ai.generate({
     prompt: tutorPrompt,
     history: request.history.map(m => ({role: m.role, content: [{text: m.text}]})),
-    input: request
+    input: request,
+    model: 'googleai/gemini-2.5-flash',
   });
 
   const text = response.text;
