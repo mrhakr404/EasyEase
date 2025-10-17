@@ -7,17 +7,14 @@ import {
 } from 'react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
-  connectAuthEmulator,
   getAuth,
   onIdTokenChanged,
-  onAuthStateChanged,
+  type User,
+  type Auth,
 } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 import { firebaseConfig } from './config';
-import type { User, Auth } from 'firebase/auth';
-import type { FirebaseApp } from 'firebase/app';
-import type { Firestore } from 'firebase/firestore';
 
 export * from './provider';
 export { useCollection } from './firestore/use-collection';
@@ -38,21 +35,20 @@ let firebaseServices: FirebaseServices | null = null;
  * @returns An object containing the initialized Firebase app, auth, and firestore services.
  */
 export function initializeFirebase(): FirebaseServices {
-  if (firebaseServices) {
-    return firebaseServices;
+  if (typeof window === 'undefined') {
+    if (firebaseServices) {
+      return firebaseServices;
+    }
   }
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const firestore = getFirestore(app);
 
-  if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    console.log('Connecting to Firebase Emulators');
-    connectAuthEmulator(auth, 'http://localhost:9099');
-    connectFirestoreEmulator(firestore, 'localhost', 8080);
+  if (!firebaseServices) {
+      firebaseServices = { app, auth, firestore };
   }
 
-  firebaseServices = { app, auth, firestore };
   return firebaseServices;
 }
 
