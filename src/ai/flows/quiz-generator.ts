@@ -15,7 +15,7 @@ import {
   type QuizRequest,
 } from '@/lib/types/quiz';
 
-const prompt = ai.definePrompt({
+const quizPrompt = ai.definePrompt({
   name: 'quizPrompt',
   input: { schema: QuizRequestSchema },
   output: { schema: QuizSchema },
@@ -41,7 +41,7 @@ const quizGeneratorFlow = ai.defineFlow(
     outputSchema: QuizSchema,
   },
   async (input) => {
-    const { output } = await ai.generate({ prompt, input });
+    const { output } = await quizPrompt(input);
     if (!output) {
       throw new Error('Failed to generate quiz');
     }

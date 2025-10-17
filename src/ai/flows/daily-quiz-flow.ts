@@ -14,7 +14,7 @@ const DailyQuizRequestSchema = z.object({
   topic: z.string().describe('The topic for the quiz question (e.g., "React Hooks")'),
 });
 
-const prompt = ai.definePrompt({
+const dailyQuizPrompt = ai.definePrompt({
   name: 'dailyQuizPrompt',
   input: { schema: DailyQuizRequestSchema },
   output: { schema: McqQuestionSchema },
@@ -37,7 +37,7 @@ const dailyQuizFlow = ai.defineFlow(
     outputSchema: McqQuestionSchema,
   },
   async (input) => {
-    const { output } = await ai.generate({ prompt, input });
+    const { output } = await dailyQuizPrompt(input);
     if (!output) {
       throw new Error('Failed to generate daily quiz question');
     }

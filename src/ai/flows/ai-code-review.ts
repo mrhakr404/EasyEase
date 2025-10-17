@@ -28,7 +28,7 @@ export async function aiCodeReview(input: AICodeReviewInput): Promise<AICodeRevi
   return aiCodeReviewFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const aiCodeReviewPrompt = ai.definePrompt({
   name: 'aiCodeReviewPrompt',
   input: { schema: AICodeReviewInputSchema },
   output: { schema: AICodeReviewOutputSchema },
@@ -51,7 +51,7 @@ const aiCodeReviewFlow = ai.defineFlow(
     outputSchema: AICodeReviewOutputSchema,
   },
   async (input) => {
-    const { output } = await ai.generate({ prompt, input });
+    const { output } = await aiCodeReviewPrompt(input);
     if (!output) {
       throw new Error("AI response was empty.");
     }
