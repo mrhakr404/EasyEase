@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -23,6 +23,7 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.DailyQuiz), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
@@ -37,7 +38,7 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                 <p className="text-muted-foreground">Here's a summary of your learning journey today.</p>
             </div>
             
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Card className="transition-all duration-300 hover:shadow-primary/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <CardHeader>
@@ -72,6 +73,22 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                         <p className="text-sm text-muted-foreground">Next due: Friday</p>
                     </CardContent>
                 </Card>
+
+                <Card className="transition-all duration-300 hover:shadow-yellow-500/20 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <CardHeader>
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
+                                <Zap className="w-5 h-5 text-yellow-400" />
+                            </div>
+                            <CardTitle>Daily Quiz</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                       <CardDescription>Test your knowledge with a quick AI-generated quiz.</CardDescription>
+                       <Button className="mt-4" onClick={() => setActiveComponent('Daily Quiz')}>Start Quiz</Button>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     );
@@ -98,6 +115,8 @@ export default function StudentDashboardPage() {
             return <AiTutor />;
         case 'Whiteboard':
             return <Whiteboard />;
+        case 'Daily Quiz':
+            return <DailyQuiz />;
         case 'Settings':
             return <ProfileSettings />;
         case 'Overview':
@@ -110,6 +129,7 @@ export default function StudentDashboardPage() {
     { name: 'Overview', icon: LayoutDashboard, color: 'text-sky-400' },
     { name: 'Courses', icon: BookCopy, color: 'text-orange-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
+    { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400' },
     { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },

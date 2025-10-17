@@ -1,274 +1,63 @@
-{
-  "entities": {
-    "UserProfile": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "UserProfile",
-      "type": "object",
-      "description": "Represents a user profile in the EnrollEase platform.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user profile."
-        },
-        "email": {
-          "type": "string",
-          "description": "User's email address.",
-          "format": "email"
-        },
-        "username": {
-          "type": "string",
-          "description": "User's unique username."
-        },
-        "firstName": {
-          "type": "string",
-          "description": "User's first name."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "User's last name."
-        },
-        "photoURL": {
-          "type": "string",
-          "description": "URL of the user's profile photo.",
-          "format": "uri"
-        },
-        "role": {
-          "type": "string",
-          "description": "User's role (student, institute, admin)."
-        }
-      },
-      "required": [
-        "id",
-        "email",
-        "username",
-        "role"
-      ]
-    },
-    "Note": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Note",
-      "type": "object",
-      "description": "Represents a student's note.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the note."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Note)"
-        },
-        "content": {
-          "type": "string",
-          "description": "Content of the note."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Date and time when the note was created.",
-          "format": "date-time"
-        },
-        "updatedAt": {
-          "type": "string",
-          "description": "Date and time when the note was last updated.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "id",
-        "userId",
-        "content",
-        "createdAt",
-        "updatedAt"
-      ]
-    },
-    "Course": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Course",
-      "type": "object",
-      "description": "Represents a course offered by an institute.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the course."
-        },
-        "instituteId": {
-          "type": "string",
-          "description": "Reference to UserProfile (as institute). (Relationship: UserProfile 1:N Course)"
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the course."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the course."
-        },
-        "studentIds": {
-          "type": "array",
-          "description": "References to UserProfiles (as students) enrolled in the course. (Relationship: UserProfile N:N Course)",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "instituteId",
-        "name",
-        "description"
-      ]
-    },
-    "Announcement": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Announcement",
-      "type": "object",
-      "description": "Represents a system-wide announcement.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the announcement."
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the announcement."
-        },
-        "content": {
-          "type": "string",
-          "description": "Content of the announcement."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Date and time when the announcement was created.",
-          "format": "date-time"
-        },
-        "adminId": {
-          "type": "string",
-          "description": "Reference to UserProfile (as admin). (Relationship: UserProfile 1:N Announcement)"
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "content",
-        "createdAt",
-        "adminId"
-      ]
-    },
-    "Institute": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Institute",
-      "type": "object",
-      "description": "Represents an institute on the platform.",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "ownerId": { "type": "string" }
-      },
-      "required": ["id", "name", "ownerId"]
-    },
-    "ChatMessage": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "ChatMessage",
-      "type": "object",
-      "description": "Represents a single message in a user's chat session with the AI tutor.",
-      "properties": {
-        "id": { "type": "string" },
-        "role": { "type": "string", "enum": ["user", "model"] },
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["id", "role", "text", "createdAt"]
+'use server';
+
+/**
+ * @fileOverview An AI-powered quiz generation tool for students.
+ *
+ * - generateQuiz - a function that handles the quiz generation process.
+ * - GenerateQuizInput - The input type for the generateQuiz function.
+ * - GenerateQuizOutput - The return type for the generateQuiz function.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+
+const GenerateQuizInputSchema = z.object({
+  topic: z.string().describe('The topic for the quiz (e.g., React Hooks, Component State).'),
+  questionCount: z.number().min(1).max(10).default(5).describe('The number of questions to generate.'),
+  difficulty: z.enum(['easy', 'medium', 'hard']).default('medium').describe('The difficulty level of the quiz.'),
+});
+export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
+
+const QuizQuestionSchema = z.object({
+    question: z.string().describe("The question text."),
+    options: z.array(z.string()).describe("An array of 4 possible answers."),
+    correctAnswer: z.string().describe("The correct answer from the options array."),
+    explanation: z.string().describe("A brief explanation for why the answer is correct.")
+});
+
+const GenerateQuizOutputSchema = z.object({
+  questions: z.array(QuizQuestionSchema).describe('An array of generated quiz questions.'),
+});
+export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
+
+const generateQuizPrompt = ai.definePrompt({
+  name: 'generateQuizPrompt',
+  input: { schema: GenerateQuizInputSchema },
+  output: { schema: GenerateQuizOutputSchema },
+  prompt: `You are an expert educator. Generate a multiple-choice quiz based on the following criteria.
+For each question, provide 4 options and clearly indicate the correct answer. Also, provide a short explanation for the correct answer.
+
+Topic: {{{topic}}}
+Number of Questions: {{{questionCount}}}
+Difficulty: {{{difficulty}}}
+`,
+});
+
+const generateQuizFlow = ai.defineFlow(
+  {
+    name: 'generateQuizFlow',
+    inputSchema: GenerateQuizInputSchema,
+    outputSchema: GenerateQuizOutputSchema,
+  },
+  async (input) => {
+    const { output } = await generateQuizPrompt(input);
+    if (!output) {
+      throw new Error("AI response was empty.");
     }
-  },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
-  },
-  "firestore": {
-    "structure": [
-      {
-        "path": "/userProfiles/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. The 'userId' parameter is the unique identifier for the user."
-        }
-      },
-      {
-        "path": "/institutes/{instituteId}",
-        "definition": {
-            "entityName": "Institute",
-            "schema": {
-                "$ref": "#/backend/entities/Institute"
-            },
-            "description": "Root collection for all institutes."
-        }
-      },
-      {
-        "path": "/institutes/{instituteId}/members/{userId}",
-        "definition": {
-            "entityName": "UserProfile",
-            "schema": {
-                "$ref": "#/backend/entities/UserProfile"
-            },
-            "description": "Subcollection storing members of an institute, mirroring the UserProfile."
-        }
-      },
-      {
-        "path": "/userProfiles/{userId}/notes/{noteId}",
-        "definition": {
-          "entityName": "Note",
-          "schema": {
-            "$ref": "#/backend/entities/Note"
-          },
-          "description": "Stores notes for each user. Path-based ownership ensures only the user can access their notes."
-        }
-      },
-      {
-        "path": "/courses/{courseId}",
-        "definition": {
-          "entityName": "Course",
-          "schema": {
-            "$ref": "#/backend/entities/Course"
-          },
-          "description": "Stores course information. Includes the 'instituteId' to identify the institute that owns the course."
-        }
-      },
-      {
-        "path": "/courses/{courseId}/enrollments/{enrollmentId}",
-        "definition": {
-            "entityName": "Enrollment",
-            "schema": {
-                "$ref": "#/backend/entities/Enrollment"
-            },
-            "description": "Subcollection tracking student enrollments for a course."
-        }
-      },
-      {
-        "path": "/announcements/{announcementId}",
-        "definition": {
-          "entityName": "Announcement",
-          "schema": {
-            "$ref": "#/backend/entities/Announcement"
-          },
-          "description": "Stores system-wide announcements."
-        }
-      },
-      {
-        "path": "/userProfiles/{userId}/chatSessions/{sessionId}/messages/{messageId}",
-        "definition": {
-            "entityName": "ChatMessage",
-            "schema": {
-                "$ref": "#/backend/entities/ChatMessage"
-            },
-            "description": "Stores messages for a specific chat session belonging to a user."
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure uses a hybrid of flat and nested collections. Root collections like 'users', 'institutes', and 'courses' allow for simple, scalable queries. Nested subcollections like 'institutes/{instituteId}/members' and 'courses/{courseId}/enrollments' are used for data that is tightly coupled to its parent, ensuring clear ownership and enabling more granular security rules. This balances query flexibility with data scoping and security."
+    return output;
   }
+);
+
+export async function generateQuiz(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
+  return generateQuizFlow(input);
 }
