@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import dynamic from 'next/dynamic';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarSeparator } from '@/components/ui/sidebar';
-import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, PenSquare } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, NotebookText, Route, BrainCircuit, Users, Code, ArrowRight, Target, Calendar, Sparkles, FileText, Spline, Settings, BookCopy, Zap, SquarePen } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserProfile } from '@/components/ui/user-profile';
@@ -156,7 +156,7 @@ export default function StudentDashboardPage() {
     { name: 'Courses', icon: BookCopy, color: 'text-orange-400' },
     { name: 'Notes', icon: NotebookText, color: 'text-amber-400' },
     { name: 'Daily Quiz', icon: Zap, color: 'text-yellow-400' },
-    { name: 'Quiz Generator', icon: PenSquare, color: 'text-lime-400' },
+    { name: 'Quiz Generator', icon: SquarePen, color: 'text-lime-400' },
     { name: 'AI Tutor', icon: BrainCircuit, color: 'text-violet-400' },
     { name: 'Code Companion', icon: Code, color: 'text-green-400' },
     { name: 'Learning Path', icon: Route, color: 'text-rose-400' },
