@@ -288,12 +288,10 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
-            // Call the cloud function to set the role
             const functions = getFunctions(auth.app);
             const setInitialUserRole = httpsCallable(functions, 'setInitialUserRole');
             await setInitialUserRole({ uid: user.uid, role: role });
             
-            // Send verification email
             await sendEmailVerification(userCredential.user);
             
             setSuccessMessage('Sign up successful! Please check your email to verify your account.');
