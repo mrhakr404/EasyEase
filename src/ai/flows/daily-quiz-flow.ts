@@ -25,6 +25,7 @@ Topic: {{{topic}}}
 - The question must have exactly 4 options.
 - One of the options must be the correct answer.
 - The "answer" field must exactly match one of the strings in the "options" array.
+- Provide a brief "explanation" for why the answer is correct.
 - The question should be suitable for a student learning the topic.
 - Do not use markdown in the output.
 `,

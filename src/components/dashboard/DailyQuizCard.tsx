@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, HelpCircle, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateDailyQuizQuestion } from '@/ai/flows/daily-quiz-flow';
 import { saveDailyQuizAttempt } from '@/lib/firebase/dailyQuiz';
@@ -200,12 +200,23 @@ export function DailyQuizCard({ className }: { className?: string }) {
         </CardFooter>
       )}
        {status === 'answered' && isCorrect !== null && (
-        <CardFooter className="flex-col items-center justify-center gap-2">
-            <p className={cn("font-bold text-lg", isCorrect ? 'text-green-400' : 'text-red-400')}>
-                {isCorrect ? "Correct!" : "Not quite!"}
-            </p>
-            {!isCorrect && <p className="text-sm text-muted-foreground">The correct answer was: <span className="font-semibold">{question?.answer}</span></p>}
-             <Button onClick={() => setStatus('completed')} variant="secondary" className="mt-2">Continue</Button>
+        <CardFooter className="flex-col items-start justify-center gap-4">
+             <div className="flex flex-col items-center w-full gap-2">
+                <p className={cn("font-bold text-lg", isCorrect ? 'text-green-400' : 'text-red-400')}>
+                    {isCorrect ? "Correct!" : "Not quite!"}
+                </p>
+                {!isCorrect && <p className="text-sm text-muted-foreground">The correct answer was: <span className="font-semibold">{question?.answer}</span></p>}
+            </div>
+            {question?.explanation && (
+                <div className="w-full p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground border">
+                     <div className="flex items-center gap-2 mb-2 font-semibold">
+                        <Lightbulb className="w-4 h-4 text-yellow-400" />
+                        Explanation
+                     </div>
+                    {question.explanation}
+                </div>
+            )}
+             <Button onClick={() => setStatus('completed')} variant="secondary" className="mt-2 w-full">Continue</Button>
         </CardFooter>
       )}
     </Card>
