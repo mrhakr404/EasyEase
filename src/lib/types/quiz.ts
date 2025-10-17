@@ -14,6 +14,8 @@ export type QuizRequest = z.infer<typeof QuizRequestSchema>;
 
 export const QuizSchema = z.object({
   title: z.string().describe('The title of the quiz.'),
-  questions: z.array(McqQuestionSchema).describe('An array of multiple-choice questions.'),
+  questions: z
+    .array(McqQuestionSchema)
+    .describe('An array of multiple-choice questions.'),
 });
 export type Quiz = z.infer<typeof QuizSchema>;

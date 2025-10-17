@@ -30,6 +30,7 @@ Number of Questions: {{{numQuestions}}}
 - The "answer" field must exactly match one of the strings in the "options" array.
 - The questions should be challenging but fair, suitable for a student learning the topic.
 - Ensure the title of the quiz reflects the topic.
+- Return strictly valid JSON that adheres to the schema.
 - Do not use markdown in the output.
 `,
 });
