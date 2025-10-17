@@ -301,21 +301,24 @@ const SignUpForm = ({ setError, setSuccessMessage, setAuthView }) => {
                     onValueChange={setRole}
                     className="grid grid-cols-2 gap-4"
                 >
-                    <RadioGroupItem value="student" id="role-student" className="peer sr-only" />
-                    <Label
-                        htmlFor="role-student"
-                        className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors peer-data-[state=checked]:bg-primary/20 peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary"
-                    >
-                        <span className="text-white font-medium">Student</span>
-                    </Label>
-
-                    <RadioGroupItem value="institute" id="role-institute" className="peer sr-only" />
-                    <Label
-                        htmlFor="role-institute"
-                        className="flex items-center justify-center gap-2 p-4 border rounded-lg cursor-pointer transition-colors peer-data-[state=checked]:bg-primary/20 peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:border-primary"
-                    >
-                        <span className="text-white font-medium">Institute</span>
-                    </Label>
+                    <div>
+                        <RadioGroupItem value="student" id="role-student" className="peer sr-only" />
+                        <Label
+                            htmlFor="role-student"
+                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                        >
+                            Student
+                        </Label>
+                    </div>
+                     <div>
+                        <RadioGroupItem value="institute" id="role-institute" className="peer sr-only" />
+                        <Label
+                            htmlFor="role-institute"
+                            className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                        >
+                            Institute
+                        </Label>
+                    </div>
                 </RadioGroup>
              </div>
             <InputField
@@ -451,3 +454,5 @@ const SuccessMessage = ({ message }) => (
 const LoadingSpinner = ({ size = 'large' }) => (
   <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary-foreground ${size === 'large' ? 'w-12 h-12' : 'w-6 h-6'}`}></div>
 );
+
+    
