@@ -111,3 +111,11 @@ export interface ChatMessage extends MessageData {
   id: string;
   createdAt: Timestamp;
 }
+
+export interface QuizResult {
+    id: string;
+    score: number;
+    totalQuestions: number;
+    topic: string;
+    createdAt: Timestamp;
+}

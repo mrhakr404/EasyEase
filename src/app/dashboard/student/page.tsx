@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, orderBy } from 'firebase/firestore';
+import type { QuizResult } from '@/lib/types';
 
 // Lazy load heavy components
 const NotesTab = dynamic(() => import('@/components/dashboard/NotesTab').then(mod => mod.NotesTab), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
@@ -23,11 +24,24 @@ const PdfSummarizer = dynamic(() => import('@/components/dashboard/PdfSummarizer
 const AiTutor = dynamic(() => import('@/components/dashboard/AiTutor').then(mod => mod.AiTutor), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const ProfileSettings = dynamic(() => import('@/components/dashboard/ProfileSettings').then(mod => mod.ProfileSettings), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 const Courses = dynamic(() => import('@/components/dashboard/student/Courses').then(mod => mod.Courses), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
-const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz').then(mod => mod.default), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
+const DailyQuiz = dynamic(() => import('@/components/dashboard/student/DailyQuiz'), { ssr: false, loading: () => <Skeleton className="h-full w-full" /> });
 
 
 const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: string) => void }) => {
     const { user, profile } = useAuth();
+    const firestore = useFirestore();
+
+    const latestQuizResultQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(
+            collection(firestore, `userProfiles/${user.uid}/quizResults`),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+        );
+    }, [user, firestore]);
+
+    const { data: latestQuizResult, isLoading: isQuizLoading } = useCollection<QuizResult>(latestQuizResultQuery);
+    const lastQuiz = latestQuizResult?.[0];
 
     return (
         <div className="animate-fade-in space-y-8">
@@ -81,12 +95,18 @@ const Overview = ({ setActiveComponent }: { setActiveComponent: (componentName: 
                             <div className="p-2 bg-yellow-500/20 rounded-lg border border-yellow-500/30">
                                 <Zap className="w-5 h-5 text-yellow-400" />
                             </div>
-                            <CardTitle>Daily Quiz</CardTitle>
+                            <CardTitle>Daily Quiz Score</CardTitle>
                         </div>
                     </CardHeader>
                     <CardContent>
-                       <CardDescription>Test your knowledge with a quick AI-generated quiz.</CardDescription>
-                       <Button className="mt-4" onClick={() => setActiveComponent('Daily Quiz')}>Start Quiz</Button>
+                       {isQuizLoading ? (
+                           <Skeleton className="h-10 w-1/2" />
+                       ) : lastQuiz ? (
+                           <p className="text-5xl font-bold">{lastQuiz.score}<span className="text-3xl text-muted-foreground">/{lastQuiz.totalQuestions}</span></p>
+                       ) : (
+                           <p className="text-muted-foreground">No quiz taken yet.</p>
+                       )}
+                       <Button className="mt-4" onClick={() => setActiveComponent('Daily Quiz')}>Start Today's Quiz</Button>
                     </CardContent>
                 </Card>
             </div>
